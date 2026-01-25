@@ -6,16 +6,20 @@ import random
 import pickle
 import argparse
 import time
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--beta", default=0, type=float)
 parser.add_argument("--categories", default=0, type=int)
 parser.add_argument("--seed", default=0, type=int)
+parser.add_argument("--output-dir", default=".", type=str, help="Output directory for results")
 args = parser.parse_args()
 
 beta = args.beta / 10
 gamma = 20
-file_path = f'training_times_{args.categories}.txt'
+output_dir = args.output_dir
+os.makedirs(output_dir, exist_ok=True)
+file_path = os.path.join(output_dir, f'training_times_{args.categories}.txt')
 
 num_days = 1000
 time_slots =\
@@ -73,11 +77,8 @@ elif args.categories == 5:
 else:
     raise ValueError("Wrong number of categories. Select among [2, 3, 4, 5]")
 
-agent_0 = RebalancingAgent(0)
-agent_1 = RebalancingAgent(1)
-agent_2 = RebalancingAgent(2)
-agent_3 = RebalancingAgent(3)
-agent_4 = RebalancingAgent(4)
+agents = {i: RebalancingAgent(i) for i in range(5)}
+active_cats = {2: [0, 4], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 3, 4]}[args.categories]
 
 G = generate_network(node_list)
 all_days_demand_vectors, transformed_demand_vectors = generate_global_demand(node_list, num_days,
@@ -99,45 +100,23 @@ for repeat in range(110):
         fails = 0
         for times in (0, 1):
             actions = np.zeros(num_stations, dtype=np.int64)
-            if repeat == 0 and day == 0:
-                pass
-            else:
+            if not (repeat == 0 and day == 0):
                 for i in range(num_stations):
-                    if G.nodes[i]['station'] == 0:
-                        actions[i] = agent_0.decide_action(state[i])
-                    elif G.nodes[i]['station'] == 1:
-                        actions[i] = agent_1.decide_action(state[i])
-                    elif G.nodes[i]['station'] == 2:
-                        actions[i] = agent_2.decide_action(state[i])
-                    elif G.nodes[i]['station'] == 3:
-                        actions[i] = agent_3.decide_action(state[i])
-                    else:
-                        actions[i] = agent_4.decide_action(state[i])
+                    cat = G.nodes[i]['station']
+                    actions[i] = agents[cat].decide_action(state[i])
 
             next_state, reward, failures = env.step(actions)
             ret += np.sum(reward)
 
             fails += np.sum(failures)
 
-            if day == 0 and repeat == 0:
-                pass
-            else:
+            train_until = {0: 19, 1: 28, 2: 37, 3: 55, 4: 110}
+            if not (day == 0 and repeat == 0):
                 for i in range(num_stations):
-                    if G.nodes[i]['station'] == 0 and repeat < 19:
-                        agent_0.update_q_table(state[i], actions[i], reward[i], next_state[i])
-                        agent_0.update_epsilon()
-                    elif G.nodes[i]['station'] == 1 and repeat < 28:
-                        agent_1.update_q_table(state[i], actions[i], reward[i], next_state[i])
-                        agent_1.update_epsilon()
-                    elif G.nodes[i]['station'] == 2 and repeat < 37:
-                        agent_2.update_q_table(state[i], actions[i], reward[i], next_state[i])
-                        agent_2.update_epsilon()
-                    elif G.nodes[i]['station'] == 3 and repeat < 55:
-                        agent_3.update_q_table(state[i], actions[i], reward[i], next_state[i])
-                        agent_3.update_epsilon()
-                    elif G.nodes[i]['station'] == 4:
-                        agent_4.update_q_table(state[i], actions[i], reward[i], next_state[i])
-                        agent_4.update_epsilon()
+                    cat = G.nodes[i]['station']
+                    if repeat < train_until[cat]:
+                        agents[cat].update_q_table(state[i], actions[i], reward[i], next_state[i])
+                        agents[cat].update_epsilon()
 
             state = next_state
 
@@ -151,44 +130,18 @@ end = time.time()
 with open(file_path, 'a') as file:
     file.write(f'{end - start},\n')
 
-if args.categories == 2:
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat0.pkl", "wb") as file:
-        pickle.dump(agent_0.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat4.pkl", "wb") as file:
-        pickle.dump(agent_4.q_table, file)
-elif args.categories == 3:
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat0.pkl", "wb") as file:
-        pickle.dump(agent_0.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat2.pkl", "wb") as file:
-        pickle.dump(agent_2.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat4.pkl", "wb") as file:
-        pickle.dump(agent_4.q_table, file)
-elif args.categories == 4:
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat0.pkl", "wb") as file:
-        pickle.dump(agent_0.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat1.pkl", "wb") as file:
-        pickle.dump(agent_1.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat3.pkl", "wb") as file:
-        pickle.dump(agent_3.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat4.pkl", "wb") as file:
-        pickle.dump(agent_4.q_table, file)
-else:
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat0.pkl", "wb") as file:
-        pickle.dump(agent_0.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat1.pkl", "wb") as file:
-        pickle.dump(agent_1.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat2.pkl", "wb") as file:
-        pickle.dump(agent_2.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat3.pkl", "wb") as file:
-        pickle.dump(agent_3.q_table, file)
-    with open(f"q_tables/q_table_{args.beta / 10}_{args.categories}_{args.seed}_cat4.pkl", "wb") as file:
-        pickle.dump(agent_4.q_table, file)
+q_tables_dir = os.path.join(output_dir, 'q_tables')
+results_dir = os.path.join(output_dir, 'results')
+os.makedirs(q_tables_dir, exist_ok=True)
+os.makedirs(results_dir, exist_ok=True)
 
-np.save(f'results/learning_curve_{args.categories}_cat_{args.beta / 10}_{args.seed}.npy', daily_returns)
+for cat in active_cats:
+    with open(os.path.join(q_tables_dir, f"q_table_{beta}_{args.categories}_{args.seed}_cat{cat}.pkl"), "wb") as file:
+        pickle.dump(agents[cat].q_table, file)
 
-print(f'Finished simulation with seed: {args.seed}, categories: {args.categories} and beta: {args.beta / 10}')
+np.save(os.path.join(results_dir, f'learning_curve_{args.categories}_cat_{beta}_{args.seed}.npy'), daily_returns)
 
-b = 0
-for i in range(num_stations):
-    b += G.nodes[i]['bikes']
-np.save(f'results/bikes_{args.categories}_cat_{args.beta / 10}_{args.seed}.npy', b)
+print(f'Finished simulation with seed: {args.seed}, categories: {args.categories} and beta: {beta}')
+
+total_bikes = sum(G.nodes[i]['bikes'] for i in range(num_stations))
+np.save(os.path.join(results_dir, f'bikes_{args.categories}_cat_{beta}_{args.seed}.npy'), total_bikes)

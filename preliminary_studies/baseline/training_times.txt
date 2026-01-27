@@ -39,7 +39,7 @@ Times in seconds per training run:
 
 Summary Statistics:
 -------------------
-Total training time: 9062.47 seconds (~2.5 hours)
-Average per run: 274.62 seconds (~4.6 minutes)
+Total training time: 9062.47 seconds (about 2.5 hours)
+Average per run: 274.62 seconds (about 4.6 minutes)
 Min: 268.74 seconds
 Max: 286.26 seconds

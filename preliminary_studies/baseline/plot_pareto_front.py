@@ -1,5 +1,5 @@
 """
-Section 3.2.1: Baseline Reproduction - Pareto Front Plotting
+Baseline Pareto Plot
 ============================================================
 
 This script generates the Pareto front figure showing the trade-off between
@@ -8,9 +8,6 @@ operational cost and fairness (Gini index) for different beta values.
 The Pareto front demonstrates that:
 - Lower beta (0.0) = lower cost but higher Gini (less fair)
 - Higher beta (1.0) = higher cost but lower Gini (more fair)
-
-Usage (from this directory):
-    python plot_pareto_front.py
 
 Output (saved to local plots/ folder):
     plots/pareto_front.pdf
@@ -30,11 +27,11 @@ import os
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Input files - local paths
+# Input files
 GINI_FILE = os.path.join(SCRIPT_DIR, 'results', 'gini_2_cat_3seeds.npy')
 COST_FILE = os.path.join(SCRIPT_DIR, 'results', 'cost_2_cat_3seeds.npy')
 
-# Output directory - local path
+# Output directory
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'plots')
 
 # Beta labels for annotation
@@ -49,17 +46,10 @@ BETA_LABELS = [
 # =============================================================================
 
 def main():
-    print("=" * 60)
-    print("Section 3.2.1: Generating Pareto Front")
-    print("=" * 60)
-
     # Load data
     # Shape: (num_seeds, num_betas) after transpose
     gini = np.load(GINI_FILE).transpose()
     cost = np.load(COST_FILE).transpose()
-
-    print(f"Loaded Gini data: {gini.shape}")
-    print(f"Loaded Cost data: {cost.shape}")
 
     # Compute averages across seeds for each beta
     avg_ginis = [np.mean(gini[:, i]) for i in range(11)]
@@ -75,7 +65,7 @@ def main():
     print("-" * 40)
 
     # Set up plot style
-    sns.set(style="whitegrid")
+    sns.set_theme(style="whitegrid")
     fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
 
     # Identify Pareto-efficient points
@@ -128,11 +118,27 @@ def main():
     # Offset positions to avoid overlapping with points
     for i in range(11):
         offset_x = -0.5 if i == 0 else -1.2
-        offset_y = -0.03
+        offset_y = -0.02
         if i in non_pareto:
             offset_y = 0.015  # Place above for dominated points
+        
+        if i == 2:
+            offset_y -= 0.01
+            offset_x += 0.4
+        
+        if i == 4:
+            offset_y += 0.01
+        
+        if i == 9:
+            offset_x = -1
+            offset_y = -0.015
+            
+        if i == 10: 
+            offset_x = -0.2
+            offset_y = 0.025
+        
         ax.text(avg_costs[i] + offset_x, avg_ginis[i] + offset_y,
-                BETA_LABELS[i], fontsize=16)
+                BETA_LABELS[i], fontsize=13)
 
     # Create legend
     handles = [mpatches.Patch(color='blue', label='Pareto efficient solutions')]
@@ -150,17 +156,9 @@ def main():
 
     # Save figures
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    pdf_path = os.path.join(OUTPUT_DIR, 'pareto_front.pdf')
     png_path = os.path.join(OUTPUT_DIR, 'pareto_front.png')
-
-    plt.savefig(pdf_path, format='pdf', bbox_inches='tight')
     plt.savefig(png_path, format='png', bbox_inches='tight', dpi=150)
-
-    print(f"\nSaved: {pdf_path}")
     print(f"Saved: {png_path}")
-    print("=" * 60)
-
     plt.show()
 
 

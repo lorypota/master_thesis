@@ -1,5 +1,5 @@
 """
-Section 3.2.1: Baseline Reproduction - Evaluation Script
+Baseline Evaluation
 ========================================================
 
 This script evaluates the trained Q-learning policies and computes:
@@ -7,17 +7,14 @@ This script evaluates the trained Q-learning policies and computes:
 2. Gini coefficient measuring inequality between categories
 3. Global service cost (rebalancing + bikes + failure penalty)
 
-The evaluation runs each trained policy for 101 days and aggregates metrics.
+The evaluation runs each trained policy for 100 days and aggregates metrics.
 
 Configuration:
 - Uses Q-tables trained with run_baseline_reproduction.py
 - 3 seeds x 11 beta values = 33 evaluations
 - 2-category case (remote + central)
 
-Usage (from this directory):
-    python evaluate_baseline.py
-
-Output (saved to local results/ folder):
+Output (saved to results/):
     results/gini_2_cat_3seeds.npy  - Gini coefficients (11 betas x 3 seeds)
     results/cost_2_cat_3seeds.npy  - Service costs (11 betas x 3 seeds)
 """
@@ -45,10 +42,10 @@ import inequalipy as ineq
 # CONFIGURATION
 # =============================================================================
 
-# Seeds used in training (must match run_baseline_reproduction.py)
+# Seeds used in training
 SEEDS = [100, 101, 102]
 
-# Beta values (fairness parameter)
+# Beta values
 BETAS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
 # Network configuration
@@ -57,7 +54,7 @@ NUM_CENTRAL = 10     # Category 4 stations (well-served areas)
 NUM_STATIONS = NUM_REMOTE + NUM_CENTRAL  # Total: 70
 
 # Evaluation parameters
-NUM_EVAL_DAYS = 101  # Days to run evaluation
+NUM_EVAL_DAYS = 101  # Days to run evaluation (first is skipped)
 GAMMA = 20           # Rebalancing cost coefficient
 
 # Demand parameters (Skellam distribution: difference of two Poisson)
@@ -77,10 +74,6 @@ REBALANCING_COST_CENTRAL = 0.1  # Lower cost to rebalance central stations
 # =============================================================================
 
 def main():
-    print("=" * 60)
-    print("Section 3.2.1: Baseline Evaluation")
-    print("=" * 60)
-
     # Storage for results: gini_values_tot[beta_index] = [seed0, seed1, seed2]
     gini_values_tot = [[] for _ in range(len(BETAS))]
     costs_tot = [[] for _ in range(len(BETAS))]
@@ -181,7 +174,8 @@ def main():
             remote_requests = 0
             global_requests = 0
 
-            for day in range(NUM_EVAL_DAYS):
+            # Skip day 0 to match the failure calculation (day 0 is warm-up)
+            for day in range(1, NUM_EVAL_DAYS):
                 for hour in range(24):
                     for station in range(NUM_STATIONS):
                         demand = all_days_demand[day][station][hour]
@@ -192,10 +186,11 @@ def main():
                                 central_requests += abs(demand)
                             global_requests += abs(demand)
 
-            # Normalize by days and stations
-            central_requests = central_requests / NUM_EVAL_DAYS / NUM_CENTRAL
-            remote_requests = remote_requests / NUM_EVAL_DAYS / NUM_REMOTE
-            global_requests = global_requests / NUM_EVAL_DAYS
+            # Normalize by days and stations (NUM_EVAL_DAYS - 1 because day 0 is skipped)
+            num_evaluated_days = NUM_EVAL_DAYS - 1
+            central_requests = central_requests / num_evaluated_days / NUM_CENTRAL
+            remote_requests = remote_requests / num_evaluated_days / NUM_REMOTE
+            global_requests = global_requests / num_evaluated_days
 
             # Compute failure rates (percentage)
             failure_rate_central = np.mean(daily_central_failures) / central_requests * 100
@@ -223,10 +218,7 @@ def main():
     cost_file = os.path.join(SCRIPT_DIR, 'results', 'cost_2_cat_3seeds.npy')
     np.save(gini_file, gini_values_tot)
     np.save(cost_file, costs_tot)
-    print(f"Saved: {gini_file}")
-    print(f"Saved: {cost_file}")
-    print("=" * 60)
-    print("\nNext step: Run plot_pareto_front.py to generate the figure")
+    print(f"Saved: {gini_file} and {cost_file}")
 
 
 if __name__ == "__main__":

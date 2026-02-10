@@ -29,6 +29,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Input files
 REMOTE_FILE = os.path.join(SCRIPT_DIR, 'results', 'failure_rate_remote_2_cat_3seeds.npy')
 CENTRAL_FILE = os.path.join(SCRIPT_DIR, 'results', 'failure_rate_central_2_cat_3seeds.npy')
+COSTS_NO_PENALTY_FILE = os.path.join(SCRIPT_DIR, 'results', 'costs_no_penalty_2_cat_3seeds.npy')
+#COSTS_NO_PENALTY_FILE = os.path.join(SCRIPT_DIR, 'results', 'bike_costs_2_cat_3seeds.npy') # same as n_bikes_2_cat_3seeds / 100
 
 # Output directory
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'plots')
@@ -45,6 +47,17 @@ def main():
     # Shape: (11 betas, 3 seeds)
     failure_rate_remote = np.load(REMOTE_FILE)
     failure_rate_central = np.load(CENTRAL_FILE)
+    
+    # Load costs data if available
+    if os.path.exists(COSTS_NO_PENALTY_FILE):
+        costs_data = np.load(COSTS_NO_PENALTY_FILE)
+        costs_mean = np.array([np.mean(costs_data[i]) for i in range(len(BETAS))])
+        costs_std = np.array([np.std(costs_data[i]) for i in range(len(BETAS))])
+        print(f"Loaded costs: {costs_data.shape}")
+    else:
+        costs_mean = None
+        costs_std = None
+        print(f"Costs file not found: {COSTS_NO_PENALTY_FILE}")
 
     print(f"Loaded remote failure rates: {failure_rate_remote.shape}")
     print(f"Loaded central failure rates: {failure_rate_central.shape}")
@@ -61,12 +74,12 @@ def main():
     fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
 
     # Plot remote areas (category 0)
-    ax.plot(BETAS, remote_mean, 'o-', color='#d62728', linewidth=2,
+    ax.plot(BETAS, remote_mean, 'o-', color='green', linewidth=2,
             markersize=8, label='Remote areas (category 0)')
     ax.fill_between(BETAS,
                      remote_mean - remote_std,
                      remote_mean + remote_std,
-                     color='#d62728', alpha=0.2)
+                     color='green', alpha=0.2)
 
     # Plot central areas (category 4)
     ax.plot(BETAS, central_mean, 's-', color='#1f77b4', linewidth=2,
@@ -76,11 +89,37 @@ def main():
                      central_mean + central_std,
                      color='#1f77b4', alpha=0.2)
 
+    # Create secondary y-axis for costs
+    ax2 = ax.twinx()
+    
+    # Plot costs on secondary axis (dotted line)
+    if costs_mean is not None:
+        ax2.plot(BETAS, costs_mean, 'o--', color='#d62728', linewidth=2,
+                markersize=6, label='Costs')
+        ax2.fill_between(BETAS,
+                         costs_mean - costs_std,
+                         costs_mean + costs_std,
+                         color='#d62728', alpha=0.1)
+        ax2.set_ylabel('Costs without penalty β', fontsize=16, color='#d62728')
+        ax2.tick_params(axis='y', labelcolor='#d62728', labelsize=14)
+        # Disable grid lines for secondary axis
+        ax2.grid(False)
+
     # Labels and formatting
     ax.set_xlabel(r'Fairness parameter $\beta$', fontsize=16)
     ax.set_ylabel('Failure rate (%)', fontsize=16)
     ax.tick_params(labelsize=14)
-    ax.legend(fontsize=14, loc='best', framealpha=0.9)
+    
+    # Combine legends from both axes
+    lines1, labels1 = ax.get_legend_handles_labels()
+    bbox_to_anchor=(0.15, 1)
+    if costs_mean is not None:
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax.legend(lines1 + lines2, labels1 + labels2, fontsize=14, 
+                  loc='upper left', bbox_to_anchor=bbox_to_anchor, framealpha=0.9)
+    else:
+        ax.legend(fontsize=14, loc='upper left', bbox_to_anchor=bbox_to_anchor, framealpha=0.9)
+    
     ax.grid(True, which='major', linestyle=':', linewidth=1, color='grey', alpha=0.5)
 
     plt.tight_layout()

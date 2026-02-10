@@ -12,7 +12,7 @@ Configuration:
 - Same 3 seeds x 11 beta values = 33 evaluations
 - 2-category case (remote + central)
 
-Output (saved to results/ folder):
+Output:
     results/failure_rate_remote_2_cat_3seeds.npy  - Remote failure rates (11 betas x 3 seeds)
     results/failure_rate_central_2_cat_3seeds.npy - Central failure rates (11 betas x 3 seeds)
 """
@@ -51,7 +51,7 @@ NUM_CENTRAL = 10     # Category 4 stations (well-served areas)
 NUM_STATIONS = NUM_REMOTE + NUM_CENTRAL  # Total: 70
 
 # Evaluation parameters
-NUM_EVAL_DAYS = 101  # Days to run evaluation
+NUM_EVAL_DAYS = 101  # Days to run evaluation (1 discarded later)
 GAMMA = 20           # Rebalancing cost coefficient
 
 # Demand parameters (Skellam distribution: difference of two Poisson)

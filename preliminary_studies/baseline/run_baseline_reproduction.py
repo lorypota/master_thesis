@@ -39,6 +39,7 @@ BETAS = range(0, 11)  # Will be divided by 10 in training.py to get 0.0-1.0
 # MAIN TRAINING LOOP
 # =============================================================================
 
+
 def main():
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -55,34 +56,46 @@ def main():
         for cat in CATEGORIES:
             for beta in BETAS:
                 run_count += 1
-                print(f"[{run_count}/{total_runs}] Training: seed={seed}, categories={cat}, beta={beta/10}")
+                print(
+                    f"[{run_count}/{total_runs}] Training: seed={seed}, categories={cat}, beta={beta / 10}"
+                )
 
                 start_time = time.time()
-                training_script = os.path.join(script_dir, '..', '..', 'beta', 'training.py')
-                cmd = f"uv run {training_script} --beta {beta} --categories {cat} --seed {seed} --output-dir \"{script_dir}\""
+                training_script = os.path.join(
+                    script_dir, "..", "..", "beta", "training.py"
+                )
+                cmd = f'uv run {training_script} --beta {beta} --categories {cat} --seed {seed} --output-dir "{script_dir}"'
                 exit_code = os.system(cmd)
                 elapsed = time.time() - start_time
                 training_times.append(elapsed)
 
                 if exit_code != 0:
-                    print(f"ERROR: Training failed for seed={seed}, cat={cat}, beta={beta}")
+                    print(
+                        f"ERROR: Training failed for seed={seed}, cat={cat}, beta={beta}"
+                    )
                 else:
                     print(f"Completed in {elapsed:.1f} seconds")
 
     # Save training times
     times_file = os.path.join(script_dir, "training_times.txt")
     with open(times_file, "w") as f:
-        f.write(f"Configuration: {CATEGORIES[0]} categories, {len(BETAS)} beta values, {len(SEEDS)} seeds ({', '.join(map(str, SEEDS))})\n")
+        f.write(
+            f"Configuration: {CATEGORIES[0]} categories, {len(BETAS)} beta values, {len(SEEDS)} seeds ({', '.join(map(str, SEEDS))})\n"
+        )
         f.write(f"Total runs: {total_runs}\n\n")
         f.write("Times in seconds per training run:\n")
         f.write("-" * 35 + "\n")
         for t in training_times:
             f.write(f"{t},\n")
-        f.write(f"\nSummary Statistics:\n")
+        f.write("\nSummary Statistics:\n")
         f.write("-" * 19 + "\n")
         avg_time = sum(training_times) / len(training_times)
-        f.write(f"Total training time: {sum(training_times):.2f} seconds (about {sum(training_times)/3600:.1f} hours)\n")
-        f.write(f"Average per run: {avg_time:.2f} seconds (about {avg_time/60:.1f} minutes)\n")
+        f.write(
+            f"Total training time: {sum(training_times):.2f} seconds (about {sum(training_times) / 3600:.1f} hours)\n"
+        )
+        f.write(
+            f"Average per run: {avg_time:.2f} seconds (about {avg_time / 60:.1f} minutes)\n"
+        )
         f.write(f"Min: {min(training_times):.2f} seconds\n")
         f.write(f"Max: {max(training_times):.2f} seconds\n")
 

@@ -1,5 +1,7 @@
 import random
+
 import numpy as np
+
 from common.av_actions import available_actions
 
 
@@ -27,7 +29,9 @@ class RebalancingAgent:
         max_q_next = max(self.get_q_value(next_state, a) for a in actions)
         q_current = self.get_q_value(state, action)
 
-        q_new = q_current + self.learning_rate * (reward + self.discount_factor * max_q_next - q_current)
+        q_new = q_current + self.learning_rate * (
+            reward + self.discount_factor * max_q_next - q_current
+        )
         self.q_table[((state[0], state[1]), action)] = q_new
 
     def decide_action(self, state):

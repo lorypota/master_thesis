@@ -1,41 +1,45 @@
-import sys
 import os
+import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(SCRIPT_DIR, '..'))
+sys.path.insert(0, os.path.join(SCRIPT_DIR, ".."))
+
+import argparse
+import pickle
+import random
+import time
+
+import numpy as np
+from environment import FairEnv
 
 from common.agent import RebalancingAgent
-from common.network import generate_network
+from common.config import GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL, get_scenario
 from common.demand import generate_global_demand
-from common.config import get_scenario, GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL
-from environment import FairEnv
-import numpy as np
-import random
-import pickle
-import argparse
-import time
+from common.network import generate_network
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--beta", default=0, type=float)
 parser.add_argument("--categories", default=0, type=int)
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--output-dir", default=SCRIPT_DIR, type=str, help="Output directory for results")
+parser.add_argument(
+    "--output-dir", default=SCRIPT_DIR, type=str, help="Output directory for results"
+)
 args = parser.parse_args()
 
 beta = args.beta / 10
 output_dir = args.output_dir
 os.makedirs(output_dir, exist_ok=True)
-file_path = os.path.join(output_dir, f'training_times_{args.categories}.txt')
+file_path = os.path.join(output_dir, f"training_times_{args.categories}.txt")
 
 # =============================================================================
 # LOAD SCENARIO CONFIG
 # =============================================================================
 
 scenario = get_scenario(args.categories)
-demand_params = scenario['demand_params']
-node_list = scenario['node_list']
-active_cats = scenario['active_cats']
-station_params = scenario['station_params']
+demand_params = scenario["demand_params"]
+node_list = scenario["node_list"]
+active_cats = scenario["active_cats"]
+station_params = scenario["station_params"]
 
 # =============================================================================
 # SETUP
@@ -66,11 +70,11 @@ for repeat in range(110):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
         fails = 0
-        for times in (0, 1):
+        for _times in (0, 1):
             actions = np.zeros(num_stations, dtype=np.int64)
             if not (repeat == 0 and day == 0):
                 for i in range(num_stations):
-                    cat = G.nodes[i]['station']
+                    cat = G.nodes[i]["station"]
                     actions[i] = agents[cat].decide_action(state[i])
 
             next_state, reward, failures = env.step(actions)
@@ -79,9 +83,11 @@ for repeat in range(110):
 
             if not (day == 0 and repeat == 0):
                 for i in range(num_stations):
-                    cat = G.nodes[i]['station']
+                    cat = G.nodes[i]["station"]
                     if repeat < TRAIN_UNTIL[cat]:
-                        agents[cat].update_q_table(state[i], actions[i], reward[i], next_state[i])
+                        agents[cat].update_q_table(
+                            state[i], actions[i], reward[i], next_state[i]
+                        )
                         agents[cat].update_epsilon()
 
             state = next_state
@@ -93,25 +99,40 @@ for repeat in range(110):
             daily_failures.append(fails)
 
 end = time.time()
-with open(file_path, 'a') as file:
-    file.write(f'{end - start},\n')
-    
+with open(file_path, "a") as file:
+    file.write(f"{end - start},\n")
+
 # =============================================================================
 # SAVE RESULTS
 # =============================================================================
 
-q_tables_dir = os.path.join(output_dir, 'q_tables')
-results_dir = os.path.join(output_dir, 'results')
+q_tables_dir = os.path.join(output_dir, "q_tables")
+results_dir = os.path.join(output_dir, "results")
 os.makedirs(q_tables_dir, exist_ok=True)
 os.makedirs(results_dir, exist_ok=True)
 
 for cat in active_cats:
-    with open(os.path.join(q_tables_dir, f"q_table_{beta}_{args.categories}_{args.seed}_cat{cat}.pkl"), "wb") as file:
+    with open(
+        os.path.join(
+            q_tables_dir, f"q_table_{beta}_{args.categories}_{args.seed}_cat{cat}.pkl"
+        ),
+        "wb",
+    ) as file:
         pickle.dump(agents[cat].q_table, file)
 
-np.save(os.path.join(results_dir, f'learning_curve_{args.categories}_cat_{beta}_{args.seed}.npy'), daily_returns)
+np.save(
+    os.path.join(
+        results_dir, f"learning_curve_{args.categories}_cat_{beta}_{args.seed}.npy"
+    ),
+    daily_returns,
+)
 
-print(f'Finished simulation with seed: {args.seed}, categories: {args.categories} and beta: {beta}')
+print(
+    f"Finished simulation with seed: {args.seed}, categories: {args.categories} and beta: {beta}"
+)
 
-total_bikes = sum(G.nodes[i]['bikes'] for i in range(num_stations))
-np.save(os.path.join(results_dir, f'bikes_{args.categories}_cat_{beta}_{args.seed}.npy'), total_bikes)
+total_bikes = sum(G.nodes[i]["bikes"] for i in range(num_stations))
+np.save(
+    os.path.join(results_dir, f"bikes_{args.categories}_cat_{beta}_{args.seed}.npy"),
+    total_bikes,
+)

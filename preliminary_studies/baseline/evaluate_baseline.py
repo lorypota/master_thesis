@@ -19,25 +19,27 @@ Output (saved to results/):
     results/cost_2_cat_3seeds.npy  - Service costs (11 betas x 3 seeds)
 """
 
-import sys
 import os
+import sys
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Add FairMSS root directory to path to import modules
-FAIRMSS_ROOT = os.path.join(SCRIPT_DIR, '..', '..')
+FAIRMSS_ROOT = os.path.join(SCRIPT_DIR, "..", "..")
 sys.path.insert(0, FAIRMSS_ROOT)
+
+import pickle
+import random
+
+import inequalipy as ineq
+import numpy as np
 
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
-from common.network import generate_network
+from common.config import BETAS, GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
 from common.demand import generate_global_demand
-from common.config import get_scenario, PHI, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, BETAS
-import numpy as np
-import random
-import pickle
-import inequalipy as ineq
+from common.network import generate_network
 
 # =============================================================================
 # CONFIGURATION
@@ -46,19 +48,20 @@ import inequalipy as ineq
 SEEDS = [100, 101, 102]
 
 scenario = get_scenario(2)
-NODE_LIST = scenario['node_list']
-ACTIVE_CATS = scenario['active_cats']
-DEMAND_PARAMS = scenario['demand_params']
-STATION_PARAMS = scenario['station_params']
+NODE_LIST = scenario["node_list"]
+ACTIVE_CATS = scenario["active_cats"]
+DEMAND_PARAMS = scenario["demand_params"]
+STATION_PARAMS = scenario["station_params"]
 
 # Network configuration
-NUM_REMOTE = NODE_LIST[0]      # Category 0 stations (underserved areas)
-NUM_CENTRAL = NODE_LIST[1]     # Category 4 stations (well-served areas)
+NUM_REMOTE = NODE_LIST[0]  # Category 0 stations (underserved areas)
+NUM_CENTRAL = NODE_LIST[1]  # Category 4 stations (well-served areas)
 NUM_STATIONS = NUM_REMOTE + NUM_CENTRAL
 
 # =============================================================================
 # MAIN EVALUATION LOOP
 # =============================================================================
+
 
 def main():
     # Storage for results: gini_values_tot[beta_index] = [seed0, seed1, seed2]
@@ -77,7 +80,9 @@ def main():
             random.seed(seed)
 
             # Load number of bikes from training results
-            bikes_file = os.path.join(SCRIPT_DIR, 'results', f'bikes_2_cat_{beta}_{seed}.npy')
+            bikes_file = os.path.join(
+                SCRIPT_DIR, "results", f"bikes_2_cat_{beta}_{seed}.npy"
+            )
             n_bikes = np.load(bikes_file)
 
             # Generate network and demand
@@ -90,8 +95,12 @@ def main():
             agent_remote = RebalancingAgent(0)
             agent_central = RebalancingAgent(4)
 
-            q_table_remote = os.path.join(SCRIPT_DIR, 'q_tables', f'q_table_{beta}_2_{seed}_cat0.pkl')
-            q_table_central = os.path.join(SCRIPT_DIR, 'q_tables', f'q_table_{beta}_2_{seed}_cat4.pkl')
+            q_table_remote = os.path.join(
+                SCRIPT_DIR, "q_tables", f"q_table_{beta}_2_{seed}_cat0.pkl"
+            )
+            q_table_central = os.path.join(
+                SCRIPT_DIR, "q_tables", f"q_table_{beta}_2_{seed}_cat4.pkl"
+            )
             with open(q_table_remote, "rb") as f:
                 agent_remote.q_table = pickle.load(f)
             with open(q_table_central, "rb") as f:
@@ -118,15 +127,19 @@ def main():
                 global_fails = 0
                 costs = 0
 
-                for time_period in (0, 1):  # Morning and evening
+                for _time_period in (0, 1):  # Morning and evening
                     # Determine actions using trained policy
                     actions = np.zeros(NUM_STATIONS, dtype=np.int64)
                     if day > 0:  # Skip first day (initialization)
                         for station in range(NUM_STATIONS):
-                            if G.nodes[station]['station'] == 0:  # Remote
-                                actions[station] = agent_remote.decide_action(state[station])
+                            if G.nodes[station]["station"] == 0:  # Remote
+                                actions[station] = agent_remote.decide_action(
+                                    state[station]
+                                )
                             else:  # Central
-                                actions[station] = agent_central.decide_action(state[station])
+                                actions[station] = agent_central.decide_action(
+                                    state[station]
+                                )
 
                     # Execute actions and observe results
                     next_state, reward, failures = eval_env.step(actions)
@@ -177,7 +190,9 @@ def main():
             global_requests = global_requests / num_evaluated_days
 
             # Compute failure rates (percentage)
-            failure_rate_central = np.mean(daily_central_failures) / central_requests * 100
+            failure_rate_central = (
+                np.mean(daily_central_failures) / central_requests * 100
+            )
             failure_rate_remote = np.mean(daily_remote_failures) / remote_requests * 100
             failure_rate_global = np.mean(daily_global_failures) / global_requests * 100
 
@@ -185,7 +200,9 @@ def main():
             gini = np.round(ineq.gini([failure_rate_central, failure_rate_remote]), 3)
 
             # cost = rebalancing_cost + bike_cost + failure_penalty
-            total_cost = np.mean(daily_global_costs) + n_bikes / 100 + failure_rate_global / 10
+            total_cost = (
+                np.mean(daily_global_costs) + n_bikes / 100 + failure_rate_global / 10
+            )
 
             # Store results
             gini_values_tot[beta_index].append(gini)
@@ -196,8 +213,8 @@ def main():
     # Save results (local path)
     print("\n" + "=" * 60)
     print("Saving results...")
-    gini_file = os.path.join(SCRIPT_DIR, 'results', 'gini_2_cat_3seeds.npy')
-    cost_file = os.path.join(SCRIPT_DIR, 'results', 'cost_2_cat_3seeds.npy')
+    gini_file = os.path.join(SCRIPT_DIR, "results", "gini_2_cat_3seeds.npy")
+    cost_file = os.path.join(SCRIPT_DIR, "results", "cost_2_cat_3seeds.npy")
     np.save(gini_file, gini_values_tot)
     np.save(cost_file, costs_tot)
     print(f"Saved: {gini_file} and {cost_file}")

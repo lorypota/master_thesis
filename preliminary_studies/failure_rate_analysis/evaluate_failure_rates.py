@@ -17,72 +17,50 @@ Output:
     results/failure_rate_central_2_cat_3seeds.npy - Central failure rates (11 betas x 3 seeds)
 """
 
-import sys
 import os
+import sys
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Add FairMSS root directory to path to import modules
-FAIRMSS_ROOT = os.path.join(SCRIPT_DIR, '..', '..')
+FAIRMSS_ROOT = os.path.join(SCRIPT_DIR, "..", "..")
 sys.path.insert(0, FAIRMSS_ROOT)
+
+import pickle
+import random
+
+import numpy as np
 
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
-from common.network import generate_network
+from common.config import BETAS, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, get_scenario
 from common.demand import generate_global_demand
-import numpy as np
-import random
-import pickle
+from common.network import generate_network
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-# Seeds used in training
 SEEDS = [100, 101, 102]
 
-# Beta values
-BETAS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+scenario = get_scenario(2)
+NODE_LIST = scenario["node_list"]
+ACTIVE_CATS = scenario["active_cats"]
+DEMAND_PARAMS = scenario["demand_params"]
+STATION_PARAMS = scenario["station_params"]
 
-# Network configuration
-NUM_REMOTE = 60      # Category 0 stations (underserved areas)
-NUM_CENTRAL = 10     # Category 4 stations (well-served areas)
-NUM_STATIONS = NUM_REMOTE + NUM_CENTRAL  # Total: 70
-
-# Evaluation parameters
-NUM_EVAL_DAYS = 101  # Days to run evaluation (1 discarded later)
-GAMMA = 20           # Rebalancing cost coefficient
-
-# Demand parameters (Skellam distribution: difference of two Poisson)
-# Format: [(mu1_morning, mu2_morning), (mu1_evening, mu2_evening)]
-REMOTE_DEMAND_PARAMS = [(0.3, 2), (1.5, 0.3)]    # Low demand, outflow in morning
-CENTRAL_DEMAND_PARAMS = [(13.8, 3.6), (6.6, 13.8)]  # High demand, inflow in morning
-
-# Time slots for rebalancing decisions
-TIME_SLOTS = [(0, 12), (12, 24)]  # Morning and evening windows
-
-# Station reward parameters for 2-category scenario
-# Derived from Skellam demand params: target = expected occupancy, threshold = 0.5 * expected arrivals
-STATION_PARAMS = {
-    0: {
-        'chi': 1, 'phi': 1,
-        'evening_target': 22, 'evening_threshold': 0.4,
-        'morning_target': 2, 'morning_threshold': 8,
-    },
-    4: {
-        'chi': -1, 'phi': 0.1,
-        'evening_target': 0, 'evening_threshold': 61,
-        'morning_target': 88, 'morning_threshold': 1,
-    },
-}
+NUM_REMOTE = NODE_LIST[0]  # Category 0 stations (underserved areas)
+NUM_CENTRAL = NODE_LIST[1]  # Category 4 stations (well-served areas)
+NUM_STATIONS = NUM_REMOTE + NUM_CENTRAL
 
 # Path to baseline results (relative to this script)
-BASELINE_DIR = os.path.join(SCRIPT_DIR, '..', 'baseline')
+BASELINE_DIR = os.path.join(SCRIPT_DIR, "..", "baseline")
 
 # =============================================================================
 # MAIN EVALUATION LOOP
 # =============================================================================
+
 
 def main():
     # Storage for results: failure_rates_remote[beta_index] = [seed0, seed1, seed2]
@@ -100,25 +78,22 @@ def main():
             np.random.seed(seed)
             random.seed(seed)
 
-            # Load number of bikes from baseline results
-            bikes_file = os.path.join(BASELINE_DIR, 'results', f'bikes_2_cat_{beta}_{seed}.npy')
-            n_bikes = np.load(bikes_file)
-
             # Generate network and demand
-            G = generate_network([NUM_REMOTE, NUM_CENTRAL])
+            G = generate_network(NODE_LIST)
             all_days_demand, transformed_demand = generate_global_demand(
-                [NUM_REMOTE, NUM_CENTRAL],
-                NUM_EVAL_DAYS,
-                [REMOTE_DEMAND_PARAMS, CENTRAL_DEMAND_PARAMS],
-                TIME_SLOTS
+                NODE_LIST, NUM_EVAL_DAYS, DEMAND_PARAMS, TIME_SLOTS
             )
 
             # Load trained Q-tables from baseline
             agent_remote = RebalancingAgent(0)
             agent_central = RebalancingAgent(4)
 
-            q_table_remote = os.path.join(BASELINE_DIR, 'q_tables', f'q_table_{beta}_2_{seed}_cat0.pkl')
-            q_table_central = os.path.join(BASELINE_DIR, 'q_tables', f'q_table_{beta}_2_{seed}_cat4.pkl')
+            q_table_remote = os.path.join(
+                BASELINE_DIR, "q_tables", f"q_table_{beta}_2_{seed}_cat0.pkl"
+            )
+            q_table_central = os.path.join(
+                BASELINE_DIR, "q_tables", f"q_table_{beta}_2_{seed}_cat4.pkl"
+            )
             with open(q_table_remote, "rb") as f:
                 agent_remote.q_table = pickle.load(f)
             with open(q_table_central, "rb") as f:
@@ -141,15 +116,19 @@ def main():
                 central_fails = 0
                 remote_fails = 0
 
-                for time_period in (0, 1):  # Morning and evening
+                for _time_period in (0, 1):  # Morning and evening
                     # Determine actions using trained policy
                     actions = np.zeros(NUM_STATIONS, dtype=np.int64)
                     if day > 0:  # Skip first day (initialization)
                         for station in range(NUM_STATIONS):
-                            if G.nodes[station]['station'] == 0:  # Remote
-                                actions[station] = agent_remote.decide_action(state[station])
+                            if G.nodes[station]["station"] == 0:  # Remote
+                                actions[station] = agent_remote.decide_action(
+                                    state[station]
+                                )
                             else:  # Central
-                                actions[station] = agent_central.decide_action(state[station])
+                                actions[station] = agent_central.decide_action(
+                                    state[station]
+                                )
 
                     # Execute actions and observe results
                     next_state, reward, failures = eval_env.step(actions)
@@ -186,21 +165,25 @@ def main():
             remote_requests = remote_requests / num_evaluated_days / NUM_REMOTE
 
             # Compute failure rates (percentage)
-            failure_rate_central = np.mean(daily_central_failures) / central_requests * 100
+            failure_rate_central = (
+                np.mean(daily_central_failures) / central_requests * 100
+            )
             failure_rate_remote = np.mean(daily_remote_failures) / remote_requests * 100
 
             # Store results
             failure_rates_remote[beta_index].append(failure_rate_remote)
             failure_rates_central[beta_index].append(failure_rate_central)
 
-            print(f"Remote FR={failure_rate_remote:.2f}%, Central FR={failure_rate_central:.2f}%")
+            print(
+                f"Remote FR={failure_rate_remote:.2f}%, Central FR={failure_rate_central:.2f}%"
+            )
 
     # Save results
-    results_dir = os.path.join(SCRIPT_DIR, 'results')
+    results_dir = os.path.join(SCRIPT_DIR, "results")
     os.makedirs(results_dir, exist_ok=True)
 
-    remote_file = os.path.join(results_dir, 'failure_rate_remote_2_cat_3seeds.npy')
-    central_file = os.path.join(results_dir, 'failure_rate_central_2_cat_3seeds.npy')
+    remote_file = os.path.join(results_dir, "failure_rate_remote_2_cat_3seeds.npy")
+    central_file = os.path.join(results_dir, "failure_rate_central_2_cat_3seeds.npy")
 
     np.save(remote_file, failure_rates_remote)
     np.save(central_file, failure_rates_central)
@@ -220,7 +203,9 @@ def main():
         central_mean = np.mean(failure_rates_central[i])
         central_std = np.std(failure_rates_central[i])
 
-        print(f"{beta:<6.1f} {remote_mean:>6.2f} ± {remote_std:<5.2f}   {central_mean:>6.2f} ± {central_std:<5.2f}")
+        print(
+            f"{beta:<6.1f} {remote_mean:>6.2f} ± {remote_std:<5.2f}   {central_mean:>6.2f} ± {central_std:<5.2f}"
+        )
 
 
 if __name__ == "__main__":

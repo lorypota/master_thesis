@@ -14,11 +14,12 @@ Output (saved to local plots/ folder):
     plots/pareto_front.png
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import matplotlib.patches as mpatches
 import os
+
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 
 # =============================================================================
 # CONFIGURATION
@@ -28,22 +29,31 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Input files
-GINI_FILE = os.path.join(SCRIPT_DIR, 'results', 'gini_2_cat_3seeds.npy')
-COST_FILE = os.path.join(SCRIPT_DIR, 'results', 'cost_2_cat_3seeds.npy')
+GINI_FILE = os.path.join(SCRIPT_DIR, "results", "gini_2_cat_3seeds.npy")
+COST_FILE = os.path.join(SCRIPT_DIR, "results", "cost_2_cat_3seeds.npy")
 
 # Output directory
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'plots')
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "plots")
 
 # Beta labels for annotation
 BETA_LABELS = [
-    r'$\beta$=0.0', r'$\beta$=0.1', r'$\beta$=0.2', r'$\beta$=0.3',
-    r'$\beta$=0.4', r'$\beta$=0.5', r'$\beta$=0.6', r'$\beta$=0.7',
-    r'$\beta$=0.8', r'$\beta$=0.9', r'$\beta$=1.0'
+    r"$\beta$=0.0",
+    r"$\beta$=0.1",
+    r"$\beta$=0.2",
+    r"$\beta$=0.3",
+    r"$\beta$=0.4",
+    r"$\beta$=0.5",
+    r"$\beta$=0.6",
+    r"$\beta$=0.7",
+    r"$\beta$=0.8",
+    r"$\beta$=0.9",
+    r"$\beta$=1.0",
 ]
 
 # =============================================================================
 # MAIN PLOTTING FUNCTION
 # =============================================================================
+
 
 def main():
     # Load data
@@ -60,8 +70,8 @@ def main():
     print("-" * 40)
     print(f"{'Beta':<8} {'Avg Cost':<12} {'Avg Gini':<12}")
     print("-" * 40)
-    for i, beta in enumerate(BETA_LABELS):
-        print(f"{i/10:<8.1f} {avg_costs[i]:<12.3f} {avg_ginis[i]:<12.3f}")
+    for i, _beta in enumerate(BETA_LABELS):
+        print(f"{i / 10:<8.1f} {avg_costs[i]:<12.3f} {avg_ginis[i]:<12.3f}")
     print("-" * 40)
 
     # Set up plot style
@@ -76,30 +86,35 @@ def main():
     for i in range(11):
         is_dominated = False
         for j in range(11):
-            if i != j:
-                # Check if point j dominates point i
-                if avg_costs[j] <= avg_costs[i] and avg_ginis[j] <= avg_ginis[i]:
-                    if avg_costs[j] < avg_costs[i] or avg_ginis[j] < avg_ginis[i]:
-                        is_dominated = True
-                        break
+            # Check if point j dominates point i
+            if (
+                i != j
+                and avg_costs[j] <= avg_costs[i]
+                and avg_ginis[j] <= avg_ginis[i]
+                and (avg_costs[j] < avg_costs[i] or avg_ginis[j] < avg_ginis[i])
+            ):
+                is_dominated = True
+                break
         if is_dominated:
             non_pareto.append(i)
         else:
             pareto_efficient.append(i)
 
-    print(f"\nPareto-efficient beta values: {[i/10 for i in pareto_efficient]}")
-    print(f"Dominated beta values: {[i/10 for i in non_pareto]}")
+    print(f"\nPareto-efficient beta values: {[i / 10 for i in pareto_efficient]}")
+    print(f"Dominated beta values: {[i / 10 for i in non_pareto]}")
 
     # Plot Pareto-efficient points
     pareto_costs = [avg_costs[i] for i in pareto_efficient]
     pareto_ginis = [avg_ginis[i] for i in pareto_efficient]
-    ax.scatter(pareto_costs, pareto_ginis, s=40, color='blue', marker='s', zorder=3)
+    ax.scatter(pareto_costs, pareto_ginis, s=40, color="blue", marker="s", zorder=3)
 
     # Plot non-Pareto points (if any)
     if non_pareto:
         non_pareto_costs = [avg_costs[i] for i in non_pareto]
         non_pareto_ginis = [avg_ginis[i] for i in non_pareto]
-        ax.scatter(non_pareto_costs, non_pareto_ginis, s=100, color='red', marker='+', zorder=3)
+        ax.scatter(
+            non_pareto_costs, non_pareto_ginis, s=100, color="red", marker="+", zorder=3
+        )
 
     # Draw step-wise Pareto frontier connecting efficient points
     # Sort by cost for proper connection
@@ -108,11 +123,21 @@ def main():
         i = sorted_indices[k]
         j = sorted_indices[k + 1]
         # Horizontal line
-        ax.plot([avg_costs[i], avg_costs[j]], [avg_ginis[i], avg_ginis[i]],
-                color='blue', linewidth=1, zorder=2)
+        ax.plot(
+            [avg_costs[i], avg_costs[j]],
+            [avg_ginis[i], avg_ginis[i]],
+            color="blue",
+            linewidth=1,
+            zorder=2,
+        )
         # Vertical line
-        ax.plot([avg_costs[j], avg_costs[j]], [avg_ginis[i], avg_ginis[j]],
-                color='blue', linewidth=1, zorder=2)
+        ax.plot(
+            [avg_costs[j], avg_costs[j]],
+            [avg_ginis[i], avg_ginis[j]],
+            color="blue",
+            linewidth=1,
+            zorder=2,
+        )
 
     # Add beta labels to each point
     # Offset positions to avoid overlapping with points
@@ -121,43 +146,47 @@ def main():
         offset_y = -0.02
         if i in non_pareto:
             offset_y = 0.015  # Place above for dominated points
-        
+
         if i == 2:
             offset_y -= 0.01
             offset_x += 0.4
-        
+
         if i == 4:
             offset_y += 0.01
-        
+
         if i == 9:
             offset_x = -1
             offset_y = -0.015
-            
-        if i == 10: 
+
+        if i == 10:
             offset_x = -0.2
             offset_y = 0.025
-        
-        ax.text(avg_costs[i] + offset_x, avg_ginis[i] + offset_y,
-                BETA_LABELS[i], fontsize=13)
+
+        ax.text(
+            avg_costs[i] + offset_x,
+            avg_ginis[i] + offset_y,
+            BETA_LABELS[i],
+            fontsize=13,
+        )
 
     # Create legend
-    handles = [mpatches.Patch(color='blue', label='Pareto efficient solutions')]
+    handles = [mpatches.Patch(color="blue", label="Pareto efficient solutions")]
     if non_pareto:
-        handles.append(mpatches.Patch(color='red', label='Non-Pareto solutions'))
-    ax.legend(handles=handles, fontsize=18, loc='lower left', framealpha=0.4)
+        handles.append(mpatches.Patch(color="red", label="Non-Pareto solutions"))
+    ax.legend(handles=handles, fontsize=18, loc="lower left", framealpha=0.4)
 
     # Labels and formatting
-    ax.set_xlabel('Global service cost', fontsize=20)
-    ax.set_ylabel('Gini index', fontsize=20)
+    ax.set_xlabel("Global service cost", fontsize=20)
+    ax.set_ylabel("Gini index", fontsize=20)
     ax.tick_params(labelsize=18)
-    ax.grid(True, which='major', linestyle=':', linewidth=1, color='grey', alpha=0.7)
+    ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 
     plt.tight_layout()
 
     # Save figures
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    png_path = os.path.join(OUTPUT_DIR, 'pareto_front.png')
-    plt.savefig(png_path, format='png', bbox_inches='tight', dpi=150)
+    png_path = os.path.join(OUTPUT_DIR, "pareto_front.png")
+    plt.savefig(png_path, format="png", bbox_inches="tight", dpi=150)
     print(f"Saved: {png_path}")
     plt.show()
 

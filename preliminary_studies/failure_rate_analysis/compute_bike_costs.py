@@ -10,6 +10,7 @@ Output:
 """
 
 import os
+
 import numpy as np
 
 # Get the directory where this script is located
@@ -20,7 +21,8 @@ SEEDS = [100, 101, 102]
 BETAS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
 # Path to baseline results
-BASELINE_DIR = os.path.join(SCRIPT_DIR, '..', 'baseline')
+BASELINE_DIR = os.path.join(SCRIPT_DIR, "..", "baseline")
+
 
 def main():
     bike_costs = [[] for _ in range(len(BETAS))]
@@ -30,20 +32,24 @@ def main():
 
         for seed in SEEDS:
             # Load number of bikes
-            bikes_file = os.path.join(BASELINE_DIR, 'results', f'bikes_2_cat_{beta}_{seed}.npy')
+            bikes_file = os.path.join(
+                BASELINE_DIR, "results", f"bikes_2_cat_{beta}_{seed}.npy"
+            )
             n_bikes = np.load(bikes_file)
-            
+
             # Bike cost = n_bikes / 100
             bike_cost = n_bikes / 100
             bike_costs[beta_index].append(bike_cost)
-            
-            print(f"Beta {beta}, Seed {seed}: n_bikes={n_bikes}, bike_cost={bike_cost:.2f}")
+
+            print(
+                f"Beta {beta}, Seed {seed}: n_bikes={n_bikes}, bike_cost={bike_cost:.2f}"
+            )
 
     # Save results
-    results_dir = os.path.join(SCRIPT_DIR, 'results')
+    results_dir = os.path.join(SCRIPT_DIR, "results")
     os.makedirs(results_dir, exist_ok=True)
-    
-    output_file = os.path.join(results_dir, 'bike_costs_2_cat_3seeds.npy')
+
+    output_file = os.path.join(results_dir, "bike_costs_2_cat_3seeds.npy")
     np.save(output_file, bike_costs)
     print(f"\nSaved: {output_file}")
 

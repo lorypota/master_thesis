@@ -12,3 +12,29 @@ dependencies = [
     "scipy>=1.16.3",
     "seaborn>=0.13.2",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (unused imports, undefined names, etc.)
+    "I",   # isort (import sorting)
+    "UP",  # pyupgrade (modernize syntax for target Python version)
+    "B",   # flake8-bugbear (common bug patterns)
+    "SIM", # flake8-simplify (simplifiable code)
+]
+ignore = [
+    "E501", # line too long — handled by ruff format instead
+    "E402", # imports not at top — needed for sys.path manipulation
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["common", "beta"]

@@ -19,11 +19,17 @@ Output (saved to results/):
     results/initial_bikes_{M}_cat_{N}seeds.npy
 """
 
+import sys
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(SCRIPT_DIR, '..'))
+
 from environment import FairEnv
-from agent import RebalancingAgent
-from network import generate_network
-from demand import generate_global_demand
-from config import get_scenario, PHI, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, BETAS
+from common.agent import RebalancingAgent
+from common.network import generate_network
+from common.demand import generate_global_demand
+from common.config import get_scenario, PHI, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, BETAS
 import numpy as np
 import random
 import pickle
@@ -73,7 +79,7 @@ def main():
             np.random.seed(seed)
             random.seed(seed)
 
-            n_bikes = np.load(f'results/bikes_{M}_cat_{beta}_{seed}.npy')
+            n_bikes = np.load(os.path.join(SCRIPT_DIR, f'results/bikes_{M}_cat_{beta}_{seed}.npy'))
 
             G = generate_network(node_list)
             all_days_demand, transformed_demand = generate_global_demand(
@@ -84,7 +90,7 @@ def main():
             agents = {}
             for cat in active_cats:
                 agent = RebalancingAgent(cat)
-                with open(f"q_tables/q_table_{beta}_{M}_{seed}_cat{cat}.pkl", "rb") as f:
+                with open(os.path.join(SCRIPT_DIR, f"q_tables/q_table_{beta}_{M}_{seed}_cat{cat}.pkl"), "rb") as f:
                     agent.q_table = pickle.load(f)
                 agent.set_epsilon(0.0)
                 agents[cat] = agent
@@ -183,14 +189,15 @@ def main():
     # Save results
     print("\n" + "=" * 60)
     print("Saving results...")
-    np.save(f'results/gini_{M}_cat_{num_seeds}seeds.npy', gini_values_tot)
-    np.save(f'results/cost_{M}_cat_{num_seeds}seeds.npy', costs_tot)
+    results_dir = os.path.join(SCRIPT_DIR, 'results')
+    np.save(os.path.join(results_dir, f'gini_{M}_cat_{num_seeds}seeds.npy'), gini_values_tot)
+    np.save(os.path.join(results_dir, f'cost_{M}_cat_{num_seeds}seeds.npy'), costs_tot)
 
     if args.save_detailed:
-        np.save(f'results/cost_reb_{M}_cat_{num_seeds}seeds.npy', costs_rebalancing)
-        np.save(f'results/cost_fail_{M}_cat_{num_seeds}seeds.npy', costs_failures)
-        np.save(f'results/cost_bikes_{M}_cat_{num_seeds}seeds.npy', costs_bikes)
-        np.save(f'results/initial_bikes_{M}_cat_{num_seeds}seeds.npy', initial_bikes)
+        np.save(os.path.join(results_dir, f'cost_reb_{M}_cat_{num_seeds}seeds.npy'), costs_rebalancing)
+        np.save(os.path.join(results_dir, f'cost_fail_{M}_cat_{num_seeds}seeds.npy'), costs_failures)
+        np.save(os.path.join(results_dir, f'cost_bikes_{M}_cat_{num_seeds}seeds.npy'), costs_bikes)
+        np.save(os.path.join(results_dir, f'initial_bikes_{M}_cat_{num_seeds}seeds.npy'), initial_bikes)
 
 
 if __name__ == "__main__":

@@ -2,15 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
+import os
 import matplotlib.patches as mpatches
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--cat", default=0, type=int)
 parser.add_argument("--save", action='store_true')
 args = parser.parse_args()
 
-gini = np.load(f'results/gini_{args.cat}_cat_10seeds.npy').transpose()
-cost = np.load(f'results/cost_{args.cat}_cat_10seeds.npy').transpose()
+gini = np.load(os.path.join(SCRIPT_DIR, f'results/gini_{args.cat}_cat_10seeds.npy')).transpose()
+cost = np.load(os.path.join(SCRIPT_DIR, f'results/cost_{args.cat}_cat_10seeds.npy')).transpose()
 
 sns.set(style="whitegrid")
 
@@ -133,6 +136,6 @@ ax.grid(True, which='major', linestyle=':', linewidth=1, color='grey', alpha=0.7
 # Show the plot
 plt.tight_layout()
 if args.save:
-    plt.savefig(f"plots/pareto_costs_gini_{args.cat}_cat.pdf", format='pdf')
-    plt.savefig(f"plots/pareto_costs_gini_{args.cat}_cat.png", format='png')
+    plt.savefig(os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{args.cat}_cat.pdf"), format='pdf')
+    plt.savefig(os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{args.cat}_cat.png"), format='png')
 plt.show()

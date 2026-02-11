@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
+import os
 import matplotlib.patches as mpatches
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", action='store_true')
@@ -25,9 +28,9 @@ rewards_0 = np.zeros((num_seeds, num_episodes))
 rewards_05 = np.zeros((num_seeds, num_episodes))
 rewards_1 = np.zeros((num_seeds, num_episodes))
 for s in range(100, 110):
-    test_0 = np.load(f'results/learning_curve_{args.cat}_cat_0.0_{s}.npy')
-    test_05 = np.load(f'results/learning_curve_{args.cat}_cat_0.5_{s}.npy')
-    test_1 = np.load(f'results/learning_curve_{args.cat}_cat_1.0_{s}.npy')
+    test_0 = np.load(os.path.join(SCRIPT_DIR, f'results/learning_curve_{args.cat}_cat_0.0_{s}.npy'))
+    test_05 = np.load(os.path.join(SCRIPT_DIR, f'results/learning_curve_{args.cat}_cat_0.5_{s}.npy'))
+    test_1 = np.load(os.path.join(SCRIPT_DIR, f'results/learning_curve_{args.cat}_cat_1.0_{s}.npy'))
     rewards_0[s - 100] = test_0
     rewards_05[s - 100] = test_05
     rewards_1[s - 100] = test_1
@@ -73,7 +76,7 @@ plt.grid(True, which='major', linestyle=':', linewidth=1, color='grey', alpha=0.
 plt.tight_layout()
 
 if args.save:
-    plt.savefig(f"plots/learning_curves_{args.cat}_cat.pdf", format='pdf')
-    plt.savefig(f"plots/learning_curves_{args.cat}_cat.png", format='png')
+    plt.savefig(os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.cat}_cat.pdf"), format='pdf')
+    plt.savefig(os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.cat}_cat.png"), format='png')
 
 plt.show()

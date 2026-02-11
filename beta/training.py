@@ -1,20 +1,25 @@
-from agent import RebalancingAgent
-from network import generate_network
-from demand import generate_global_demand
+import sys
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(SCRIPT_DIR, '..'))
+
+from common.agent import RebalancingAgent
+from common.network import generate_network
+from common.demand import generate_global_demand
+from common.config import get_scenario, GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL
 from environment import FairEnv
-from config import get_scenario, GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL
 import numpy as np
 import random
 import pickle
 import argparse
 import time
-import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--beta", default=0, type=float)
 parser.add_argument("--categories", default=0, type=int)
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--output-dir", default=".", type=str, help="Output directory for results")
+parser.add_argument("--output-dir", default=SCRIPT_DIR, type=str, help="Output directory for results")
 args = parser.parse_args()
 
 beta = args.beta / 10

@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from av_actions import available_actions
+from common.av_actions import available_actions
 
 
 class RebalancingAgent:

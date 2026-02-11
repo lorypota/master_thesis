@@ -58,7 +58,8 @@ def main():
                 print(f"[{run_count}/{total_runs}] Training: seed={seed}, categories={cat}, beta={beta/10}")
 
                 start_time = time.time()
-                cmd = f"uv run training.py --beta {beta} --categories {cat} --seed {seed} --output-dir \"{script_dir}\""
+                training_script = os.path.join(script_dir, '..', '..', 'beta', 'training.py')
+                cmd = f"uv run {training_script} --beta {beta} --categories {cat} --seed {seed} --output-dir \"{script_dir}\""
                 exit_code = os.system(cmd)
                 elapsed = time.time() - start_time
                 training_times.append(elapsed)

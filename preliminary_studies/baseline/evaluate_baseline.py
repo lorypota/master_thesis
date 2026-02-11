@@ -29,11 +29,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FAIRMSS_ROOT = os.path.join(SCRIPT_DIR, '..', '..')
 sys.path.insert(0, FAIRMSS_ROOT)
 
-from environment import FairEnv
-from agent import RebalancingAgent
-from network import generate_network
-from demand import generate_global_demand
-from config import get_scenario, PHI, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, BETAS
+from beta.environment import FairEnv
+from common.agent import RebalancingAgent
+from common.network import generate_network
+from common.demand import generate_global_demand
+from common.config import get_scenario, PHI, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, BETAS
 import numpy as np
 import random
 import pickle

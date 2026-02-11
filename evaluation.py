@@ -10,13 +10,13 @@ Usage:
     python evaluation.py --categories 5 --seeds 100 110 --save-detailed
 
 Output (saved to results/):
-    results/gini_{M}_cat_{N}seeds_bis.npy
-    results/cost_{M}_cat_{N}seeds_bis.npy
+    results/gini_{M}_cat_{N}seeds.npy
+    results/cost_{M}_cat_{N}seeds.npy
     (with --save-detailed):
-    results/cost_reb_{M}_cat_{N}seeds_bis.npy
-    results/cost_fail_{M}_cat_{N}seeds_bis.npy
-    results/cost_bikes_{M}_cat_{N}seeds_bis.npy
-    results/initial_bikes_{M}_cat_{N}seeds_bis.npy
+    results/cost_reb_{M}_cat_{N}seeds.npy
+    results/cost_fail_{M}_cat_{N}seeds.npy
+    results/cost_bikes_{M}_cat_{N}seeds.npy
+    results/initial_bikes_{M}_cat_{N}seeds.npy
 """
 
 from environment import FairEnv
@@ -183,14 +183,14 @@ def main():
     # Save results
     print("\n" + "=" * 60)
     print("Saving results...")
-    np.save(f'results/gini_{M}_cat_{num_seeds}seeds_bis.npy', gini_values_tot)
-    np.save(f'results/cost_{M}_cat_{num_seeds}seeds_bis.npy', costs_tot)
+    np.save(f'results/gini_{M}_cat_{num_seeds}seeds.npy', gini_values_tot)
+    np.save(f'results/cost_{M}_cat_{num_seeds}seeds.npy', costs_tot)
 
     if args.save_detailed:
-        np.save(f'results/cost_reb_{M}_cat_{num_seeds}seeds_bis.npy', costs_rebalancing)
-        np.save(f'results/cost_fail_{M}_cat_{num_seeds}seeds_bis.npy', costs_failures)
-        np.save(f'results/cost_bikes_{M}_cat_{num_seeds}seeds_bis.npy', costs_bikes)
-        np.save(f'results/initial_bikes_{M}_cat_{num_seeds}seeds_bis.npy', initial_bikes)
+        np.save(f'results/cost_reb_{M}_cat_{num_seeds}seeds.npy', costs_rebalancing)
+        np.save(f'results/cost_fail_{M}_cat_{num_seeds}seeds.npy', costs_failures)
+        np.save(f'results/cost_bikes_{M}_cat_{num_seeds}seeds.npy', costs_bikes)
+        np.save(f'results/initial_bikes_{M}_cat_{num_seeds}seeds.npy', initial_bikes)
 
 
 if __name__ == "__main__":

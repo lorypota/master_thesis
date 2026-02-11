@@ -33,6 +33,7 @@ from environment import FairEnv
 from agent import RebalancingAgent
 from network import generate_network
 from demand import generate_global_demand
+from config import get_scenario, PHI, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, BETAS
 import numpy as np
 import random
 import pickle
@@ -42,47 +43,18 @@ import inequalipy as ineq
 # CONFIGURATION
 # =============================================================================
 
-# Seeds used in training
 SEEDS = [100, 101, 102]
 
-# Beta values
-BETAS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+scenario = get_scenario(2)
+NODE_LIST = scenario['node_list']
+ACTIVE_CATS = scenario['active_cats']
+DEMAND_PARAMS = scenario['demand_params']
+STATION_PARAMS = scenario['station_params']
 
 # Network configuration
-NUM_REMOTE = 60      # Category 0 stations (underserved areas)
-NUM_CENTRAL = 10     # Category 4 stations (well-served areas)
+NUM_REMOTE = NODE_LIST[0]      # Category 0 stations (underserved areas)
+NUM_CENTRAL = NODE_LIST[1]     # Category 4 stations (well-served areas)
 NUM_STATIONS = NUM_REMOTE + NUM_CENTRAL
-
-# Evaluation parameters
-NUM_EVAL_DAYS = 101  # Days to run evaluation (first is skipped)
-GAMMA = 20           # Rebalancing cost coefficient
-
-# Demand parameters (Skellam distribution: difference of two Poisson)
-# Format: [(mu1_morning, mu2_morning), (mu1_evening, mu2_evening)]
-REMOTE_DEMAND_PARAMS = [(0.3, 2), (1.5, 0.3)]    # Low demand, outflow in morning
-CENTRAL_DEMAND_PARAMS = [(13.8, 3.6), (6.6, 13.8)]  # High demand, inflow in morning
-
-# Time slots for rebalancing decisions
-TIME_SLOTS = [(0, 12), (12, 24)]  # Morning and evening windows
-
-# Cost parameters for rebalancing
-REBALANCING_COST_REMOTE = 1.0   # Higher cost to rebalance remote stations
-REBALANCING_COST_CENTRAL = 0.1  # Lower cost to rebalance central stations
-
-# Station reward parameters for 2-category scenario
-# Derived from Skellam demand params: target = expected occupancy, threshold = 0.5 * expected arrivals
-STATION_PARAMS = {
-    0: {
-        'chi': 1, 'phi': 1,
-        'evening_target': 22, 'evening_threshold': 0.4,
-        'morning_target': 2, 'morning_threshold': 8,
-    },
-    4: {
-        'chi': -1, 'phi': 0.1,
-        'evening_target': 0, 'evening_threshold': 61,
-        'morning_target': 88, 'morning_threshold': 1,
-    },
-}
 
 # =============================================================================
 # MAIN EVALUATION LOOP
@@ -104,20 +76,17 @@ def main():
             np.random.seed(seed)
             random.seed(seed)
 
-            # Load number of bikes from training results (local path)
+            # Load number of bikes from training results
             bikes_file = os.path.join(SCRIPT_DIR, 'results', f'bikes_2_cat_{beta}_{seed}.npy')
             n_bikes = np.load(bikes_file)
 
             # Generate network and demand
-            G = generate_network([NUM_REMOTE, NUM_CENTRAL])
+            G = generate_network(NODE_LIST)
             all_days_demand, transformed_demand = generate_global_demand(
-                [NUM_REMOTE, NUM_CENTRAL],
-                NUM_EVAL_DAYS,
-                [REMOTE_DEMAND_PARAMS, CENTRAL_DEMAND_PARAMS],
-                TIME_SLOTS
+                NODE_LIST, NUM_EVAL_DAYS, DEMAND_PARAMS, TIME_SLOTS
             )
 
-            # Load trained Q-tables (local path)
+            # Load trained Q-tables
             agent_remote = RebalancingAgent(0)
             agent_central = RebalancingAgent(4)
 
@@ -171,9 +140,9 @@ def main():
                     for station, action in enumerate(actions):
                         if action != 0:  # Rebalancing occurred
                             if station < NUM_REMOTE:
-                                costs += REBALANCING_COST_REMOTE
+                                costs += PHI[0]
                             else:
-                                costs += REBALANCING_COST_CENTRAL
+                                costs += PHI[4]
 
                     state = next_state
 
@@ -212,11 +181,9 @@ def main():
             failure_rate_remote = np.mean(daily_remote_failures) / remote_requests * 100
             failure_rate_global = np.mean(daily_global_failures) / global_requests * 100
 
-            # Compute Gini coefficient
             # Gini = 0 means perfect equality, Gini > 0 means inequality
             gini = np.round(ineq.gini([failure_rate_central, failure_rate_remote]), 3)
 
-            # Compute total cost
             # cost = rebalancing_cost + bike_cost + failure_penalty
             total_cost = np.mean(daily_global_costs) + n_bikes / 100 + failure_rate_global / 10
 

@@ -107,7 +107,6 @@ class FairEnv:
             mu[i] = self.G.nodes[i]['bikes']
 
         state, failures = self.get_state()
-
         reward = self.compute_reward(action, failures, mu)
 
         return state, reward, failures

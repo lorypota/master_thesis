@@ -3,7 +3,21 @@ import numpy as np
 
 class FairEnv:
 
-    def __init__(self, graph, demand_vectors, beta, gamma):
+    def __init__(self, graph, demand_vectors, beta, gamma, station_params):
+        """
+        Args:
+            graph: NetworkX graph representing the MSS network.
+            demand_vectors: Pre-generated demand vectors.
+            beta: Fairness weighting parameter.
+            gamma: Rebalancing cost parameter.
+            station_params: Dict mapping station category -> dict with keys:
+                'chi':               fairness penalty multiplier for beta
+                'phi':               rebalancing cost multiplier for gamma
+                'evening_target':    target occupancy when next_rebalancing_hour == 23
+                'evening_threshold': tolerance around evening target
+                'morning_target':    target occupancy when next_rebalancing_hour != 23
+                'morning_threshold': tolerance around morning target
+        """
         self.G = graph
         self.demand_vectors = demand_vectors
         self.num_stations = len(list(self.G.nodes))
@@ -13,6 +27,7 @@ class FairEnv:
         self.beta = beta
         self.gamma = gamma
         self.csi = 0.3
+        self.station_params = station_params
 
     def get_state(self):
         state = np.zeros((self.num_stations, 2), dtype=np.int64)
@@ -48,34 +63,29 @@ class FairEnv:
 
         return state, failures
 
-    def compute_reward(self, action, failures, mu):  # reward is a (num_stations, 1) vector
+    def compute_reward(self, action, failures, mu):
         rewards = np.zeros(self.num_stations)
 
         for i in range(self.num_stations):
-            if action[i] != 0:
-                rebalancing_penalty = 1
-            else:
-                rebalancing_penalty = 0
-            rewards[i] -= failures[i]
-            if self.G.nodes[i]['station'] == 0:
-                rewards[i] -= self.beta * 1 * failures[i]
-                rewards[i] -= self.gamma * 1 * rebalancing_penalty
-                if self.next_rebalancing_hour == 23:
-                    if abs(mu[i] - 22) > 0.4:
-                        rewards[i] -= self.csi * (abs(mu[i] - 22) - 0.4)
-                else:
-                    if abs(mu[i] - 2) > 8:
-                        rewards[i] -= self.csi * (abs(mu[i] - 2) - 8)
+            cat = self.G.nodes[i]['station']
+            p = self.station_params[cat]
 
-            elif self.G.nodes[i]['station'] == 4:
-                rewards[i] -= self.beta * (-1) * failures[i]
-                rewards[i] -= self.gamma * 0.1 * rebalancing_penalty
-                if self.next_rebalancing_hour == 23:
-                    if abs(mu[i]) > 61:
-                        rewards[i] -= self.csi * (abs(mu[i]) - 61)
-                else:
-                    if abs(mu[i] - 88) > 1:
-                        rewards[i] -= self.csi * (abs(mu[i] - 88) - 1)
+            rebalancing_penalty = 1 if action[i] != 0 else 0
+
+            rewards[i] -= failures[i]
+            rewards[i] -= self.beta * p['chi'] * failures[i]
+            rewards[i] -= self.gamma * p['phi'] * rebalancing_penalty
+
+            if self.next_rebalancing_hour == 23:
+                target = p['evening_target']
+                threshold = p['evening_threshold']
+            else:
+                target = p['morning_target']
+                threshold = p['morning_threshold']
+
+            deviation = abs(mu[i] - target)
+            if deviation > threshold:
+                rewards[i] -= self.csi * (deviation - threshold)
 
         return rewards
 

@@ -19,7 +19,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FAIRMSS_ROOT = os.path.join(SCRIPT_DIR, '..', '..')
 sys.path.insert(0, FAIRMSS_ROOT)
 
-from environment_2 import FairEnv
+from environment import FairEnv
 from agent import RebalancingAgent
 from network import generate_network
 from demand import generate_global_demand
@@ -56,6 +56,21 @@ TIME_SLOTS = [(0, 12), (12, 24)]
 # Cost parameters for rebalancing
 REBALANCING_COST_REMOTE = 1.0
 REBALANCING_COST_CENTRAL = 0.1
+
+# Station reward parameters for 2-category scenario
+# Derived from Skellam demand params: target = expected occupancy, threshold = 0.5 * expected arrivals
+STATION_PARAMS = {
+    0: {
+        'chi': 1, 'phi': 1,
+        'evening_target': 22, 'evening_threshold': 0.4,
+        'morning_target': 2, 'morning_threshold': 8,
+    },
+    4: {
+        'chi': -1, 'phi': 0.1,
+        'evening_target': 0, 'evening_threshold': 61,
+        'morning_target': 88, 'morning_threshold': 1,
+    },
+}
 
 # Path to baseline results
 BASELINE_DIR = os.path.join(SCRIPT_DIR, '..', 'baseline')
@@ -105,7 +120,7 @@ def main():
             agent_central.set_epsilon(0.0)
 
             # Initialize environment
-            eval_env = FairEnv(G, transformed_demand, beta, GAMMA)
+            eval_env = FairEnv(G, transformed_demand, beta, GAMMA, STATION_PARAMS)
             state = eval_env.reset()
 
             daily_rebalancing_costs = []

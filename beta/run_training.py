@@ -4,11 +4,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 seeds = range(100, 110)
 categories = range(2, 6)
-betas = range(0, 11)
-
-seeds = [100]
-categories = [2]
-betas = [0]
+betas = range(0, 11)  # (divided by 10 in training.py)
 
 print("Starting training reproduction...")
 

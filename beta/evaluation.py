@@ -19,24 +19,21 @@ Output (saved to results/):
     results/initial_bikes_{M}_cat_{N}seeds.npy
 """
 
-import os
-import sys
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(SCRIPT_DIR, ".."))
-
 import argparse
+import os
 import pickle
 import random
 
 import inequalipy as ineq
 import numpy as np
-from environment import FairEnv
 
+from beta.environment import FairEnv
 from common.agent import RebalancingAgent
 from common.config import BETAS, GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
 from common.demand import generate_global_demand
 from common.network import generate_network
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def main():

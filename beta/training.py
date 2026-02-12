@@ -1,21 +1,18 @@
-import os
-import sys
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(SCRIPT_DIR, ".."))
-
 import argparse
+import os
 import pickle
 import random
 import time
 
 import numpy as np
-from environment import FairEnv
 
+from beta.environment import FairEnv
 from common.agent import RebalancingAgent
 from common.config import GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL, get_scenario
 from common.demand import generate_global_demand
 from common.network import generate_network
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--beta", default=0, type=float)

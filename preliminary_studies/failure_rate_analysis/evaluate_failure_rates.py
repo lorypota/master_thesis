@@ -18,15 +18,6 @@ Output:
 """
 
 import os
-import sys
-
-# Get the directory where this script is located
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Add FairMSS root directory to path to import modules
-FAIRMSS_ROOT = os.path.join(SCRIPT_DIR, "..", "..")
-sys.path.insert(0, FAIRMSS_ROOT)
-
 import pickle
 import random
 
@@ -37,6 +28,8 @@ from common.agent import RebalancingAgent
 from common.config import BETAS, GAMMA, NUM_EVAL_DAYS, TIME_SLOTS, get_scenario
 from common.demand import generate_global_demand
 from common.network import generate_network
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =============================================================================
 # CONFIGURATION

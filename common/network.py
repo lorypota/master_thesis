@@ -1,8 +1,25 @@
 import networkx as nx
 
 
-# node_list is a vector containing the number of nodes for each category
 def generate_network(node_list):
+    """
+    Build a NetworkX graph of stations.
+
+    Args:
+        node_list (list[int]): Number of stations per category.
+
+    Returns:
+        nx.Graph: Graph where each node has attributes:
+            - "station": category label
+            - "bikes": initial bike count (0)
+
+    Example:
+        >>> g = generate_network([2, 1])
+        >>> g.number_of_nodes()
+        3
+        >>> g.nodes[0]
+        {'station': 0, 'bikes': 0}
+    """
     g = nx.Graph()
 
     n_categories = len(node_list)

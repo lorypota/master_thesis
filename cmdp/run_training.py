@@ -2,18 +2,18 @@ import os
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-seeds = range(100, 110)
-categories = range(2, 6)
-betas = range(0, 11)  # (divided by 10 in training.py)
+seeds = [100]
+categories = [2]
+r_max_values = [0.05, 0.10, 0.15, 0.20, 0.25]
 
-print("Starting training reproduction...")
+print("Starting CMDP training...")
 
 training_script = os.path.join(SCRIPT_DIR, "training.py")
 
 for s in seeds:
     for c in categories:
-        for b in betas:
-            cmd = f"uv run {training_script} --beta {b} --categories {c} --seed {s}"
+        for r in r_max_values:
+            cmd = f"uv run {training_script} --r-max {r} --categories {c} --seed {s}"
 
             print(f"Running: {cmd}")
 

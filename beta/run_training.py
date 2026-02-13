@@ -7,7 +7,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 seeds = range(100, 110)
-categories = range(2, 6)
+categories = [5]
 betas = [round(b * 0.1, 1) for b in range(11)]
 
 run_group = datetime.now().strftime("%Y%m%d_%H%M%S")

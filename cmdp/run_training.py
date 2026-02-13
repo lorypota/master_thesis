@@ -5,9 +5,9 @@ from common.config import CPU_CORES, MAX_MEMORY_MB
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-seeds = [100]
-categories = [2]
-r_max_values = [0.05, 0.10, 0.15, 0.20, 0.25]
+seeds = range(100, 110)
+categories = [5]
+r_max_values = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
 
 run_group = datetime.now().strftime("%Y%m%d_%H%M%S")
 

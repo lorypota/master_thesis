@@ -67,7 +67,7 @@ def main():
         nargs="+",
         type=float,
         default=None,
-        help="r_max values to evaluate (default: 0.0 to 1.0 in 0.1 steps)",
+        help="r_max values to evaluate",
     )
     args = parser.parse_args()
 

@@ -2,11 +2,11 @@ import argparse
 import os
 import pickle
 import random
-import time
+from datetime import datetime
 
 import numpy as np
-import wandb
 
+import wandb
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
 from common.config import GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL, get_scenario
@@ -33,6 +33,9 @@ parser.add_argument("--eta", default=0.1, type=float, help="Dual step size")
 parser.add_argument(
     "--n-dual", default=100, type=int, help="Days between dual variable updates"
 )
+parser.add_argument(
+    "--run-group", default=None, type=str, help="Wandb group ID for grouping runs"
+)
 args = parser.parse_args()
 
 r_max = args.r_max
@@ -41,7 +44,7 @@ n_dual = args.n_dual
 constrained_cats = set(args.constrained_cats)
 output_dir = args.output_dir
 os.makedirs(output_dir, exist_ok=True)
-file_path = os.path.join(output_dir, f"training_times_{args.categories}.txt")
+
 
 # =============================================================================
 # LOAD SCENARIO CONFIG
@@ -83,7 +86,7 @@ lambda_history = []
 
 wandb.init(
     project="fairmss",
-    group=f"cmdp-{args.categories}cat",
+    group=f"cmdp-{args.categories}cat-{args.run_group or datetime.now().strftime('%Y%m%d_%H%M%S')}",
     name=f"rmax{r_max}_seed{args.seed}",
     config={
         "method": "cmdp",
@@ -124,12 +127,12 @@ state = env.reset()
 # TRAINING LOOP
 # =============================================================================
 
-start = time.time()
 for repeat in range(110):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
         fails = 0
         cat_daily_fails = {cat: 0.0 for cat in active_cats}
+        cat_period_fails = {cat: {} for cat in active_cats}
         for _times in (0, 1):
             actions = np.zeros(num_stations, dtype=np.int64)
             if not (repeat == 0 and day == 0):
@@ -148,6 +151,7 @@ for repeat in range(110):
                     failures[boundaries[cat_idx] : boundaries[cat_idx + 1]]
                 )
                 cat_daily_fails[cat] += cat_failures
+                cat_period_fails[cat][period] = cat_failures / node_list[cat_idx]
                 if cat in failure_accumulator:
                     # Normalize by number of areas in this category
                     failure_accumulator[cat][period] += (
@@ -204,6 +208,13 @@ for repeat in range(110):
             }
             for cat in active_cats:
                 log_dict[f"failures/cat{cat}"] = cat_daily_fails[cat]
+            for cat_idx, cat in enumerate(active_cats):
+                for p in (0, 1):
+                    pname = "morning" if p == 0 else "evening"
+                    lambda_d = demand_params[cat_idx][p][1]
+                    per_area = cat_period_fails[cat].get(p, 0.0)
+                    rate = per_area / (12 * lambda_d) if lambda_d > 0 else 0.0
+                    log_dict[f"failure_rate/cat{cat}_{pname}"] = rate
             for cat, lam in lambdas.items():
                 log_dict[f"lambda/cat{cat}_morning"] = lam[0]
                 log_dict[f"lambda/cat{cat}_evening"] = lam[1]
@@ -211,10 +222,6 @@ for repeat in range(110):
                 log_dict[f"epsilon/cat{cat}"] = agents[cat].epsilon
             log_dict.update(dual_update_info)
             wandb.log(log_dict)
-
-end = time.time()
-with open(file_path, "a") as file:
-    file.write(f"{end - start},\n")
 
 wandb.finish()
 # =============================================================================

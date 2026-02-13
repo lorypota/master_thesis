@@ -5,8 +5,8 @@ import random
 import time
 
 import numpy as np
-import wandb
 
+import wandb
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
 from common.config import GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL, get_scenario

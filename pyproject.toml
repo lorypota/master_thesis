@@ -11,6 +11,7 @@ dependencies = [
     "numpy>=2.3.5",
     "scipy>=1.16.3",
     "seaborn>=0.13.2",
+    "wandb>=0.25.0",
 ]
 
 [build-system]

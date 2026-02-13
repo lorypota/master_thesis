@@ -5,6 +5,7 @@ import random
 import time
 
 import numpy as np
+import wandb
 
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
@@ -39,6 +40,26 @@ active_cats = scenario["active_cats"]
 station_params = scenario["station_params"]
 
 # =============================================================================
+# WANDB
+# =============================================================================
+
+wandb.init(
+    project="fairmss",
+    group=f"beta-{args.categories}cat",
+    name=f"beta{beta}_seed{args.seed}",
+    config={
+        "method": "beta",
+        "beta": beta,
+        "categories": args.categories,
+        "seed": args.seed,
+        "gamma": GAMMA,
+        "num_train_days": NUM_TRAIN_DAYS,
+        "node_list": node_list,
+        "active_cats": active_cats,
+    },
+)
+
+# =============================================================================
 # SETUP
 # =============================================================================
 
@@ -50,6 +71,7 @@ all_days_demand_vectors, transformed_demand_vectors = generate_global_demand(
 )
 
 num_stations = np.sum(node_list)
+boundaries = np.cumsum([0] + node_list)
 daily_returns = []
 daily_failures = []
 np.random.seed(args.seed)
@@ -67,6 +89,7 @@ for repeat in range(110):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
         fails = 0
+        cat_daily_fails = {cat: 0.0 for cat in active_cats}
         for _times in (0, 1):
             actions = np.zeros(num_stations, dtype=np.int64)
             if not (repeat == 0 and day == 0):
@@ -77,6 +100,11 @@ for repeat in range(110):
             next_state, reward, failures = env.step(actions)
             ret += np.sum(reward)
             fails += np.sum(failures)
+
+            for cat_idx, cat in enumerate(active_cats):
+                cat_daily_fails[cat] += np.sum(
+                    failures[boundaries[cat_idx] : boundaries[cat_idx + 1]]
+                )
 
             if not (day == 0 and repeat == 0):
                 for i in range(num_stations):
@@ -89,16 +117,28 @@ for repeat in range(110):
 
             state = next_state
 
-        if repeat == 0 and day == 0:
-            pass
-        else:
+        if not (repeat == 0 and day == 0):
             daily_returns.append(ret)
             daily_failures.append(fails)
+
+            log_dict = {
+                "repeat": repeat,
+                "day": day,
+                "daily_return": ret,
+                "daily_failures": fails,
+            }
+            for cat in active_cats:
+                log_dict[f"failures/cat{cat}"] = cat_daily_fails[cat]
+            for cat in active_cats:
+                log_dict[f"epsilon/cat{cat}"] = agents[cat].epsilon
+            wandb.log(log_dict)
 
 end = time.time()
 with open(file_path, "a") as file:
     file.write(f"{end - start},\n")
 
+
+wandb.finish()
 # =============================================================================
 # SAVE RESULTS
 # =============================================================================

@@ -5,6 +5,7 @@ import random
 import time
 
 import numpy as np
+import wandb
 
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
@@ -77,6 +78,29 @@ day_counter = 0
 lambda_history = []
 
 # =============================================================================
+# WANDB
+# =============================================================================
+
+wandb.init(
+    project="fairmss",
+    group=f"cmdp-{args.categories}cat",
+    name=f"rmax{r_max}_seed{args.seed}",
+    config={
+        "method": "cmdp",
+        "r_max": r_max,
+        "categories": args.categories,
+        "seed": args.seed,
+        "eta": eta,
+        "n_dual": n_dual,
+        "constrained_cats": list(constrained_cats),
+        "gamma": GAMMA,
+        "num_train_days": NUM_TRAIN_DAYS,
+        "node_list": node_list,
+        "active_cats": active_cats,
+    },
+)
+
+# =============================================================================
 # SETUP
 # =============================================================================
 
@@ -105,6 +129,7 @@ for repeat in range(110):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
         fails = 0
+        cat_daily_fails = {cat: 0.0 for cat in active_cats}
         for _times in (0, 1):
             actions = np.zeros(num_stations, dtype=np.int64)
             if not (repeat == 0 and day == 0):
@@ -119,10 +144,11 @@ for repeat in range(110):
             # Accumulate per-category per-period failures for dual update
             period = env.current_period
             for cat_idx, cat in enumerate(active_cats):
+                cat_failures = np.sum(
+                    failures[boundaries[cat_idx] : boundaries[cat_idx + 1]]
+                )
+                cat_daily_fails[cat] += cat_failures
                 if cat in failure_accumulator:
-                    cat_failures = np.sum(
-                        failures[boundaries[cat_idx] : boundaries[cat_idx + 1]]
-                    )
                     # Normalize by number of areas in this category
                     failure_accumulator[cat][period] += (
                         cat_failures / node_list[cat_idx]
@@ -140,6 +166,7 @@ for repeat in range(110):
             state = next_state
 
         # Dual variable update every n_dual days
+        dual_update_info = {}
         day_counter += 1
         if day_counter >= n_dual:
             for cat in list(failure_accumulator.keys()):
@@ -149,6 +176,10 @@ for repeat in range(110):
                         f_hat = failure_accumulator[cat][p] / n_dual
                         f_bar = failure_thresholds[cat][p]
                         violation = f_hat - f_bar
+                        pname = "morning" if p == 0 else "evening"
+                        dual_update_info[f"dual/cat{cat}_{pname}_f_hat"] = f_hat
+                        dual_update_info[f"dual/cat{cat}_{pname}_f_bar"] = f_bar
+                        dual_update_info[f"dual/cat{cat}_{pname}_violation"] = violation
                         lambdas[cat][p] = max(0.0, lambdas[cat][p] + eta * violation)
 
             # Log snapshot
@@ -164,10 +195,28 @@ for repeat in range(110):
             daily_returns.append(ret)
             daily_failures.append(fails)
 
+            # wandb logging
+            log_dict = {
+                "repeat": repeat,
+                "day": day,
+                "daily_return": ret,
+                "daily_failures": fails,
+            }
+            for cat in active_cats:
+                log_dict[f"failures/cat{cat}"] = cat_daily_fails[cat]
+            for cat, lam in lambdas.items():
+                log_dict[f"lambda/cat{cat}_morning"] = lam[0]
+                log_dict[f"lambda/cat{cat}_evening"] = lam[1]
+            for cat in active_cats:
+                log_dict[f"epsilon/cat{cat}"] = agents[cat].epsilon
+            log_dict.update(dual_update_info)
+            wandb.log(log_dict)
+
 end = time.time()
 with open(file_path, "a") as file:
     file.write(f"{end - start},\n")
 
+wandb.finish()
 # =============================================================================
 # SAVE RESULTS
 # =============================================================================

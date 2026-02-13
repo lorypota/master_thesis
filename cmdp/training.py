@@ -2,11 +2,11 @@ import argparse
 import os
 import pickle
 import random
-from datetime import datetime
+import time
 
 import numpy as np
-
 import wandb
+
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
 from common.config import GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL, get_scenario
@@ -86,7 +86,7 @@ lambda_history = []
 
 wandb.init(
     project="fairmss",
-    group=f"cmdp-{args.categories}cat-{args.run_group or datetime.now().strftime('%Y%m%d_%H%M%S')}",
+    group=f"cmdp-{args.categories}cat-{args.run_group}",
     name=f"rmax{r_max}_seed{args.seed}",
     config={
         "method": "cmdp",
@@ -127,6 +127,8 @@ state = env.reset()
 # TRAINING LOOP
 # =============================================================================
 
+global_step = 0
+start = time.time()
 for repeat in range(110):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
@@ -196,6 +198,7 @@ for repeat in range(110):
             day_counter = 0
 
         if not (repeat == 0 and day == 0):
+            global_step += 1
             daily_returns.append(ret)
             daily_failures.append(fails)
 
@@ -203,6 +206,8 @@ for repeat in range(110):
             log_dict = {
                 "repeat": repeat,
                 "day": day,
+                "global_step": global_step,
+                "elapsed_time": time.time() - start,
                 "daily_return": ret,
                 "daily_failures": fails,
             }

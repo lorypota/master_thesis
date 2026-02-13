@@ -5,8 +5,8 @@ import random
 import time
 
 import numpy as np
-
 import wandb
+
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
 from common.config import GAMMA, NUM_TRAIN_DAYS, TIME_SLOTS, TRAIN_UNTIL, get_scenario
@@ -22,12 +22,15 @@ parser.add_argument("--seed", default=0, type=int)
 parser.add_argument(
     "--output-dir", default=SCRIPT_DIR, type=str, help="Output directory for results"
 )
+parser.add_argument(
+    "--run-group", default=None, type=str, help="Wandb group ID for grouping runs"
+)
 args = parser.parse_args()
 
-beta = args.beta / 10
+beta = args.beta
 output_dir = args.output_dir
 os.makedirs(output_dir, exist_ok=True)
-file_path = os.path.join(output_dir, f"training_times_{args.categories}.txt")
+
 
 # =============================================================================
 # LOAD SCENARIO CONFIG
@@ -45,7 +48,7 @@ station_params = scenario["station_params"]
 
 wandb.init(
     project="fairmss",
-    group=f"beta-{args.categories}cat",
+    group=f"beta-{args.categories}cat-{args.run_group}",
     name=f"beta{beta}_seed{args.seed}",
     config={
         "method": "beta",
@@ -84,6 +87,7 @@ state = env.reset()
 # TRAINING LOOP
 # =============================================================================
 
+global_step = 0
 start = time.time()
 for repeat in range(110):
     for day in range(NUM_TRAIN_DAYS):
@@ -118,12 +122,15 @@ for repeat in range(110):
             state = next_state
 
         if not (repeat == 0 and day == 0):
+            global_step += 1
             daily_returns.append(ret)
             daily_failures.append(fails)
 
             log_dict = {
                 "repeat": repeat,
                 "day": day,
+                "global_step": global_step,
+                "elapsed_time": time.time() - start,
                 "daily_return": ret,
                 "daily_failures": fails,
             }
@@ -132,11 +139,6 @@ for repeat in range(110):
             for cat in active_cats:
                 log_dict[f"epsilon/cat{cat}"] = agents[cat].epsilon
             wandb.log(log_dict)
-
-end = time.time()
-with open(file_path, "a") as file:
-    file.write(f"{end - start},\n")
-
 
 wandb.finish()
 # =============================================================================

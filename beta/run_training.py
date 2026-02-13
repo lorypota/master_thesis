@@ -1,10 +1,16 @@
 import os
+from datetime import datetime
+
+from common.config import CPU_CORES, MAX_MEMORY_MB
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 seeds = range(100, 110)
 categories = range(2, 6)
-betas = range(0, 11)  # (divided by 10 in training.py)
+betas = [round(b * 0.1, 1) for b in range(11)]
+
+run_group = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 print("Starting training reproduction...")
 
@@ -13,7 +19,10 @@ training_script = os.path.join(SCRIPT_DIR, "training.py")
 for s in seeds:
     for c in categories:
         for b in betas:
-            cmd = f"uv run {training_script} --beta {b} --categories {c} --seed {s}"
+            cmd = (
+                f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M --cpu {CPU_CORES}"
+                f" -- uv run {training_script} --beta {b} --categories {c} --seed {s} --run-group {run_group}"
+            )
 
             print(f"Running: {cmd}")
 

@@ -1,6 +1,8 @@
 import os
 from datetime import datetime
 
+from common.config import CPU_CORES, MAX_MEMORY_MB
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 seeds = [100]
@@ -16,7 +18,10 @@ training_script = os.path.join(SCRIPT_DIR, "training.py")
 for s in seeds:
     for c in categories:
         for r in r_max_values:
-            cmd = f"uv run {training_script} --r-max {r} --categories {c} --seed {s} --run-group {run_group}"
+            cmd = (
+                f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M --cpu {CPU_CORES}"
+                f" -- uv run {training_script} --r-max {r} --categories {c} --seed {s} --run-group {run_group}"
+            )
 
             print(f"Running: {cmd}")
 

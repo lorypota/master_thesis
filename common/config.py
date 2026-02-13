@@ -6,6 +6,10 @@ station reward parameters) and helper functions used across training,
 evaluation, and analysis scripts.
 """
 
+# Resource limits app-reken12
+MAX_MEMORY_MB = 24576
+CPU_CORES = "0-19"
+
 # Fairness penalty (chi) and rebalancing cost (phi) per station category
 CHI = {0: 1, 1: 0.5, 2: 0.4, 3: -0.5, 4: -1}
 PHI = {0: 1, 1: 0.8, 2: 0.4, 3: 0.3, 4: 0.1}

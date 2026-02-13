@@ -13,7 +13,6 @@ from common.agent import RebalancingAgent
 from common.config import (
     CPU_CORES,
     GAMMA,
-    MAX_MEMORY_MB,
     NUM_TRAIN_DAYS,
     TIME_SLOTS,
     TRAIN_UNTIL,
@@ -23,7 +22,7 @@ from common.demand import generate_global_demand
 from common.network import generate_network
 
 # Limit resource usage for app-reken12
-os.system(f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M -p {os.getpid()}")
+# os.system(f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M -p {os.getpid()}")
 p = psutil.Process()
 p.cpu_affinity(
     list(range(int(CPU_CORES.split("-")[0]), int(CPU_CORES.split("-")[1]) + 1))

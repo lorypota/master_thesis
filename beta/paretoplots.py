@@ -9,15 +9,16 @@ import seaborn as sns
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--cat", default=0, type=int)
+parser.add_argument("--categories", default=0, type=int)
 parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
+cat = args.categories
 
 gini = np.load(
-    os.path.join(SCRIPT_DIR, f"results/gini_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/gini_{cat}_cat_10seeds.npy")
 ).transpose()
 cost = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/cost_{cat}_cat_10seeds.npy")
 ).transpose()
 
 sns.set(style="whitegrid")
@@ -41,8 +42,8 @@ beta = [
     r"$\beta$=1.0",
 ]
 
-# 5 CATEGORIES
-if args.cat == 5:
+# 5 catEGORIES
+if cat == 5:
     ax.scatter(avg_costs, avg_ginis, 40, color="blue", marker="s")
     for i in range(10):
         ax.plot(
@@ -73,8 +74,8 @@ if args.cat == 5:
     blue_patch = mpatches.Patch(color="blue", label="Pareto efficient solutions")
     ax.legend(handles=[blue_patch], fontsize=26, loc="lower left", framealpha=0.4)
 
-# 4 CATEGORIES
-if args.cat == 4:
+# 4 catEGORIES
+if cat == 4:
     ax.scatter(avg_costs, avg_ginis, 40, color="blue", marker="s")
     for i in range(10):
         ax.plot(
@@ -105,8 +106,8 @@ if args.cat == 4:
     blue_patch = mpatches.Patch(color="blue", label="Pareto efficient solutions")
     ax.legend(handles=[blue_patch], fontsize=26, loc="lower left", framealpha=0.4)
 
-# 3 CATEGORIES
-if args.cat == 3:
+# 3 catEGORIES
+if cat == 3:
     ax.scatter(avg_costs[:8], avg_ginis[:8], 40, color="blue", marker="s")
     ax.scatter(avg_costs[9:11], avg_ginis[9:11], 40, color="blue", marker="s")
     ax.scatter(avg_costs[8], avg_ginis[8], 100, color="red", marker="+")
@@ -167,8 +168,8 @@ if args.cat == 3:
         handles=[blue_patch, red_patch], fontsize=26, loc="lower left", framealpha=0.4
     )
 
-# 2 CATEGORIES
-if args.cat == 2:
+# 2 catEGORIES
+if cat == 2:
     ax.scatter(avg_costs[:8], avg_ginis[:8], 40, color="blue", marker="s")
     ax.scatter(avg_costs[9:11], avg_ginis[9:11], 40, color="blue", marker="s")
     ax.scatter(avg_costs[8], avg_ginis[8], 100, color="red", marker="+")
@@ -237,11 +238,11 @@ ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{args.cat}_cat.pdf"),
+        os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{cat}_cat.pdf"),
         format="pdf",
     )
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{args.cat}_cat.png"),
+        os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{cat}_cat.png"),
         format="png",
     )
 plt.show()

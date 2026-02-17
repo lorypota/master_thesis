@@ -132,7 +132,7 @@ def main():
                             cat = G.nodes[i]["station"]
                             actions[i] = agents[cat].decide_action(state[i])
 
-                    next_state, reward, failures = eval_env.step(actions)
+                    next_state, _reward, failures = eval_env.step(actions)
 
                     # Accumulate failures per category using boundaries
                     for idx, cat in enumerate(active_cats):

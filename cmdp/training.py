@@ -41,12 +41,15 @@ parser.add_argument(
     "--constrained-cats",
     nargs="+",
     type=int,
-    default=[0],
-    help="Category indices to constrain (default: [0] = remote only)",
+    default=None,
+    help="Category indices to constrain (default: all active categories)",
 )
 parser.add_argument("--eta", default=0.1, type=float, help="Dual step size")
 parser.add_argument(
     "--n-dual", default=100, type=int, help="Days between dual variable updates"
+)
+parser.add_argument(
+    "--num-repeats", default=50, type=int, help="Number of training repeats (default: 50)"
 )
 parser.add_argument(
     "--run-group", default=None, type=str, help="Wandb group ID for grouping runs"
@@ -56,7 +59,6 @@ args = parser.parse_args()
 r_max = args.r_max
 eta = args.eta
 n_dual = args.n_dual
-constrained_cats = set(args.constrained_cats)
 output_dir = args.output_dir
 os.makedirs(output_dir, exist_ok=True)
 
@@ -70,6 +72,8 @@ demand_params = scenario["demand_params"]
 node_list = scenario["node_list"]
 active_cats = scenario["active_cats"]
 station_params = scenario["station_params"]
+
+constrained_cats = set(args.constrained_cats if args.constrained_cats is not None else active_cats)
 
 # =============================================================================
 # DUAL VARIABLE SETUP
@@ -112,6 +116,7 @@ wandb.init(
         "n_dual": n_dual,
         "constrained_cats": list(constrained_cats),
         "gamma": GAMMA,
+        "num_repeats": args.num_repeats,
         "num_train_days": NUM_TRAIN_DAYS,
         "node_list": node_list,
         "active_cats": active_cats,
@@ -144,7 +149,7 @@ state = env.reset()
 
 global_step = 0
 start = time.time()
-for repeat in range(110):
+for repeat in range(args.num_repeats):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
         fails = 0

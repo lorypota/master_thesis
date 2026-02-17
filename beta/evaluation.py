@@ -6,8 +6,8 @@ Evaluates trained Q-learning policies for any category scenario (2-5).
 Computes failure rates, Gini coefficient, and global service cost.
 
 Usage:
-    uv run evaluation.py --categories 2
-    uv run evaluation.py --categories 5 --seeds 100 110 --save-detailed
+    uv run beta/evaluation.py --categories 2
+    uv run beta/evaluation.py --categories 5 --seeds 100 110 --save-detailed
 
 Output (saved to results/):
     results/gini_{M}_cat_{N}seeds.npy

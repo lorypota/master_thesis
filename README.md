@@ -42,10 +42,7 @@ FairMSS/
 ## Setup
 
 1. Clone the repository
-2. Install dependencies:
-   ```
-   uv sync
-   ```
+2. Install dependencies with: `uv sync`
 
 ## Beta formulation
 

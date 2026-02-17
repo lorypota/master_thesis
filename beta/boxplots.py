@@ -78,9 +78,6 @@ ax.tick_params(axis="y")
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_gini_{args.cat}_cat.pdf"), format="pdf"
-    )
-    plt.savefig(
         os.path.join(SCRIPT_DIR, f"plots/boxplot_gini_{args.cat}_cat.png"), format="png"
     )
 plt.show()
@@ -122,10 +119,6 @@ ax.tick_params(axis="y")
 # Show the plot
 plt.tight_layout()
 if args.save:
-    plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_reb_{args.cat}_cat.pdf"),
-        format="pdf",
-    )
     plt.savefig(
         os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_reb_{args.cat}_cat.png"),
         format="png",
@@ -169,10 +162,6 @@ ax.tick_params(axis="y")
 # Show the plot
 plt.tight_layout()
 if args.save:
-    plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_fails_{args.cat}_cat.pdf"),
-        format="pdf",
-    )
     plt.savefig(
         os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_fails_{args.cat}_cat.png"),
         format="png",
@@ -227,10 +216,6 @@ ax.tick_params(axis="y")
 # Show the plot
 plt.tight_layout()
 if args.save:
-    plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_bikes_{args.cat}_cat.pdf"),
-        format="pdf",
-    )
     plt.savefig(
         os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_bikes_{args.cat}_cat.png"),
         format="png",

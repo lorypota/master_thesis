@@ -7,9 +7,9 @@ Computes failure rates, Gini coefficient, global service cost,
 and constraint satisfaction for constrained categories.
 
 Usage:
-    uv run evaluation.py --categories 2
-    uv run evaluation.py --categories 2 --r-max-values 0.05 0.10 0.15 0.20 0.25
-    uv run evaluation.py --categories 5 --seeds 100 110 --save-detailed
+    uv run cmdp/evaluation.py --categories 2
+    uv run cmdp/evaluation.py --categories 2 --r-max-values 0.05 0.10 0.15 0.20 0.25
+    uv run cmdp/evaluation.py --categories 5 --seeds 100 110 --save-detailed
 
 Output (saved to results/):
     results/gini_{M}_cat_{N}seeds.npy
@@ -37,7 +37,7 @@ from common.demand import generate_global_demand
 from common.network import generate_network
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-R_MAX_VALUES = [round(r * 0.1, 1) for r in range(11)]
+R_MAX_VALUES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
 
 
 def main():
@@ -59,8 +59,8 @@ def main():
         "--constrained-cats",
         nargs="+",
         type=int,
-        default=[0],
-        help="Category indices that were constrained during training",
+        default=None,
+        help="Category indices that were constrained during training (default: all active)",
     )
     parser.add_argument(
         "--r-max-values",
@@ -77,7 +77,7 @@ def main():
     active_cats = scenario["active_cats"]
     demand_params = scenario["demand_params"]
     station_params = scenario["station_params"]
-    constrained_cats = set(args.constrained_cats)
+    constrained_cats = set(args.constrained_cats if args.constrained_cats is not None else active_cats)
 
     r_max_values = args.r_max_values if args.r_max_values else R_MAX_VALUES
 
@@ -89,6 +89,7 @@ def main():
 
     # Result storage
     num_r_max = len(r_max_values)
+    num_active_cats = len(active_cats)
     gini_values_tot = [[] for _ in range(num_r_max)]
     costs_tot = [[] for _ in range(num_r_max)]
     costs_rebalancing = [[] for _ in range(num_r_max)]
@@ -96,6 +97,8 @@ def main():
     costs_bikes = [[] for _ in range(num_r_max)]
     initial_bikes = [[] for _ in range(num_r_max)]
     constraint_satisfaction = [[] for _ in range(num_r_max)]
+    # Per-category per-period failure rates: shape (num_r_max, num_seeds, num_active_cats, 2)
+    failure_rates_per_cat_period = np.zeros((num_r_max, num_seeds, num_active_cats, 2))
 
     for r_idx, r_max in enumerate(r_max_values):
         print(f"\nEvaluating r_max = {r_max}")
@@ -147,11 +150,10 @@ def main():
             daily_global_failures = []
             daily_global_costs = []
 
-            # Per-category per-period failure tracking for constraint check
+            # Per-category per-period failure tracking for all active categories
             period_cat_failures = {}
-            for cat in constrained_cats:
-                if cat in active_cats:
-                    period_cat_failures[cat] = {0: [], 1: []}
+            for cat in active_cats:
+                period_cat_failures[cat] = {0: [], 1: []}
 
             for day in range(NUM_EVAL_DAYS):
                 cat_fails = {cat: 0 for cat in active_cats}
@@ -253,9 +255,9 @@ def main():
                 np.mean(daily_global_costs) + n_bikes / 100 + failure_rate_global / 10
             )
 
-            # Constraint satisfaction check
+            # Constraint satisfaction check (only for constrained categories)
             satisfied = True
-            for cat in period_cat_failures:
+            for cat in failure_thresholds:
                 for p in (0, 1):
                     avg_fail = np.mean(period_cat_failures[cat][p])
                     threshold = failure_thresholds[cat][p]
@@ -269,6 +271,15 @@ def main():
                 costs_rebalancing[r_idx].append(np.mean(daily_global_costs))
                 costs_failures[r_idx].append(failure_rate_global)
                 costs_bikes[r_idx].append(n_bikes)
+
+            # Store per-category per-period failure rates
+            seed_idx = seeds.index(seed)
+            for cat_idx_local, cat in enumerate(active_cats):
+                for p in (0, 1):
+                    avg_fail = np.mean(period_cat_failures[cat][p])
+                    failure_rates_per_cat_period[r_idx, seed_idx, cat_idx_local, p] = (
+                        avg_fail
+                    )
 
             constraint_str = "SAT" if satisfied else "VIOL"
             print(
@@ -289,6 +300,14 @@ def main():
     np.save(
         os.path.join(results_dir, f"constraint_sat_{M}_cat_{num_seeds}seeds.npy"),
         constraint_satisfaction,
+    )
+
+    np.save(
+        os.path.join(
+            results_dir,
+            f"failure_rates_per_cat_period_{M}_cat_{num_seeds}seeds.npy",
+        ),
+        failure_rates_per_cat_period,
     )
 
     if args.save_detailed:

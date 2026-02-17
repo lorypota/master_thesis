@@ -238,10 +238,6 @@ ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{cat}_cat.pdf"),
-        format="pdf",
-    )
-    plt.savefig(
         os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{cat}_cat.png"),
         format="png",
     )

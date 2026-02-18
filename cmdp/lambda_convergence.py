@@ -12,7 +12,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPRESENTATIVE_R_MAX = [0.05, 0.15, 0.35]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--cat", default=5, type=int)
+parser.add_argument("--categories", default=5, type=int)
 parser.add_argument("--save", action="store_true")
 parser.add_argument(
     "--r-max-values",
@@ -51,7 +51,7 @@ for r_idx, r_max in enumerate(r_max_to_plot):
     for seed in seeds:
         fpath = os.path.join(
             SCRIPT_DIR,
-            f"results/lambda_history_{args.cat}_cat_{r_max}_{seed}.pkl",
+            f"results/lambda_history_{args.categories}_cat_{r_max}_{seed}.pkl",
         )
         with open(fpath, "rb") as f:
             history = pickle.load(f)
@@ -133,7 +133,7 @@ ax.legend(
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/lambda_convergence_{args.cat}_cat.png"),
+        os.path.join(SCRIPT_DIR, f"plots/lambda_convergence_{args.categories}_cat.png"),
         format="png",
     )
 plt.show()

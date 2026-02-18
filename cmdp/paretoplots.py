@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from common.config import R_MAX_VALUES
+from cmdp.config import R_MAX_VALUES
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 

@@ -30,16 +30,10 @@ import random
 import inequalipy as ineq
 import numpy as np
 
+from cmdp.config import R_MAX_VALUES, compute_failure_thresholds
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
-from common.config import (
-    GAMMA,
-    NUM_EVAL_DAYS,
-    PHI,
-    R_MAX_VALUES,
-    TIME_SLOTS,
-    get_scenario,
-)
+from common.config import GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
 from common.demand import generate_global_demand
 from common.network import generate_network
 
@@ -90,7 +84,7 @@ def main():
     r_max_values = args.r_max_values if args.r_max_values else R_MAX_VALUES
 
     num_stations = sum(node_list)
-    boundaries = np.cumsum([0] + node_list)
+    boundaries = scenario["boundaries"]
 
     seeds = list(range(args.seeds[0], args.seeds[1]))
     num_seeds = len(seeds)
@@ -111,14 +105,9 @@ def main():
     for r_idx, r_max in enumerate(r_max_values):
         print(f"\nEvaluating r_max = {r_max}")
 
-        # Pre-compute failure thresholds for constraint checking
-        failure_thresholds = {}
-        for cat_idx, cat in enumerate(active_cats):
-            if cat in constrained_cats:
-                failure_thresholds[cat] = [
-                    r_max * 12 * demand_params[cat_idx][0][1],  # morning
-                    r_max * 12 * demand_params[cat_idx][1][1],  # evening
-                ]
+        failure_thresholds = compute_failure_thresholds(
+            r_max, demand_params, active_cats, constrained_cats
+        )
 
         for seed in seeds:
             print(f"  Seed {seed}...", end=" ")

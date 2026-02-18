@@ -5,39 +5,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from beta.config import BETAS
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--cat", default=0, type=int)
+parser.add_argument("--categories", default=0, type=int)
 parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
 
 gini = np.load(
-    os.path.join(SCRIPT_DIR, f"results/gini_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/gini_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_reb = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_reb_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/cost_reb_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_fail = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_fail_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/cost_fail_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_bikes = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_bikes_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/cost_bikes_{args.categories}_cat_10seeds.npy")
 ).transpose()
-beta = [
-    "w",
-    "0.0",
-    "0.1",
-    "0.2",
-    "0.3",
-    "0.4",
-    "0.5",
-    "0.6",
-    "0.7",
-    "0.8",
-    "0.9",
-    "1.0",
-]
+beta_labels = [str(b) for b in BETAS]
 
 # GINI INDEX
 
@@ -71,14 +60,15 @@ ax.set_ylabel("Gini index", fontsize=36)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 # Tweaking x and y axes ticks
 ax.set_xticks(range(1, 12))
-ax.set_xticklabels([beta[i] for i in range(1, 12)], fontsize=34)
+ax.set_xticklabels(beta_labels, fontsize=34)
 ax.tick_params(labelsize=34)
 ax.tick_params(axis="y")
 # Show the plot
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_gini_{args.cat}_cat.png"), format="png"
+        os.path.join(SCRIPT_DIR, f"plots/boxplot_gini_{args.categories}_cat.png"),
+        format="png",
     )
 plt.show()
 
@@ -113,14 +103,14 @@ ax.set_ylabel("Weighted reb. op's", fontsize=36)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 # Tweaking x and y axes ticks
 ax.set_xticks(range(1, 12))
-ax.set_xticklabels([beta[i] for i in range(1, 12)], fontsize=34)
+ax.set_xticklabels(beta_labels, fontsize=34)
 ax.tick_params(labelsize=34)
 ax.tick_params(axis="y")
 # Show the plot
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_reb_{args.cat}_cat.png"),
+        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_reb_{args.categories}_cat.png"),
         format="png",
     )
 plt.show()
@@ -156,14 +146,16 @@ ax.set_ylabel("Failure rate [%]", fontsize=36)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 # Tweaking x and y axes ticks
 ax.set_xticks(range(1, 12))
-ax.set_xticklabels([beta[i] for i in range(1, 12)], fontsize=34)
+ax.set_xticklabels(beta_labels, fontsize=34)
 ax.tick_params(labelsize=34)
 ax.tick_params(axis="y")
 # Show the plot
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_fails_{args.cat}_cat.png"),
+        os.path.join(
+            SCRIPT_DIR, f"plots/boxplot_costs_fails_{args.categories}_cat.png"
+        ),
         format="png",
     )
 plt.show()
@@ -171,7 +163,7 @@ plt.show()
 # BIKES COSTS
 
 initial_bikes = np.load(
-    os.path.join(SCRIPT_DIR, f"results/initial_bikes_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/initial_bikes_{args.categories}_cat_10seeds.npy")
 ).transpose()[:, 0]
 mean = np.mean(initial_bikes)
 std_dev = np.std(initial_bikes)
@@ -210,14 +202,16 @@ ax.set_ylabel("Number of vehicles", fontsize=36)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 # Tweaking x and y axes ticks
 ax.set_xticks(range(1, 12))
-ax.set_xticklabels([beta[i] for i in range(1, 12)], fontsize=34)
+ax.set_xticklabels(beta_labels, fontsize=34)
 ax.tick_params(labelsize=34)
 ax.tick_params(axis="y")
 # Show the plot
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_bikes_{args.cat}_cat.png"),
+        os.path.join(
+            SCRIPT_DIR, f"plots/boxplot_costs_bikes_{args.categories}_cat.png"
+        ),
         format="png",
     )
 plt.show()

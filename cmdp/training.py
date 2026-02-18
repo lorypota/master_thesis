@@ -8,6 +8,7 @@ import numpy as np
 import psutil
 import wandb
 
+from cmdp.config import compute_failure_thresholds
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
 from common.config import (
@@ -87,20 +88,13 @@ constrained_cats = set(
 # DUAL VARIABLE SETUP
 # =============================================================================
 
-# Boundaries for slicing failures by category
-boundaries = np.cumsum([0] + node_list)
+boundaries = scenario["boundaries"]
 
 # Initialize dual variables (lambdas) for constrained categories only
-lambdas = {}
-failure_thresholds = {}
-for cat_idx, cat in enumerate(active_cats):
-    if cat in constrained_cats:
-        lambdas[cat] = [0.0, 0.0]  # [morning, evening]
-        # Threshold = r_max * 12 * lambda_d (per area per 12-hour period)
-        failure_thresholds[cat] = [
-            r_max * 12 * demand_params[cat_idx][0][1],  # morning
-            r_max * 12 * demand_params[cat_idx][1][1],  # evening
-        ]
+lambdas = {cat: [0.0, 0.0] for cat in active_cats if cat in constrained_cats}
+failure_thresholds = compute_failure_thresholds(
+    r_max, demand_params, active_cats, constrained_cats
+)
 
 # Failure accumulator and tracking
 failure_accumulator = {cat: [0.0, 0.0] for cat in lambdas}

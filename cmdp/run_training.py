@@ -3,7 +3,7 @@ import subprocess
 import sys
 from datetime import datetime
 
-from common.config import R_MAX_VALUES
+from cmdp.config import R_MAX_VALUES
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 

@@ -27,9 +27,10 @@ import random
 import inequalipy as ineq
 import numpy as np
 
+from beta.config import BETAS
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
-from common.config import BETAS, GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
+from common.config import GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
 from common.demand import generate_global_demand
 from common.network import generate_network
 
@@ -62,9 +63,7 @@ def main():
 
     num_stations = sum(node_list)
 
-    # Precompute cumulative boundaries for slicing failures by category
-    # e.g. node_list=[60, 40, 30, 20, 10] -> boundaries=[0, 60, 100, 130, 150, 160]
-    boundaries = np.cumsum([0] + node_list)
+    boundaries = scenario["boundaries"]
 
     seeds = list(range(args.seeds[0], args.seeds[1]))
     num_seeds = len(seeds)

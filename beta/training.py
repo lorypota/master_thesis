@@ -89,7 +89,7 @@ all_days_demand_vectors, transformed_demand_vectors = generate_global_demand(
 )
 
 num_stations = np.sum(node_list)
-boundaries = np.cumsum([0] + node_list)
+boundaries = scenario["boundaries"]
 daily_returns = []
 daily_failures = []
 np.random.seed(args.seed)

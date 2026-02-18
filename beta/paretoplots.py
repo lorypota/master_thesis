@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from beta.config import BETAS
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
@@ -28,19 +30,7 @@ fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
 avg_ginis = [np.mean(gini[:, i]) for i in range(11)]
 avg_costs = [np.mean(cost[:, i]) for i in range(11)]
 
-beta = [
-    r"$\beta$=0.0",
-    r"$\beta$=0.1",
-    r"$\beta$=0.2",
-    r"$\beta$=0.3",
-    r"$\beta$=0.4",
-    r"$\beta$=0.5",
-    r"$\beta$=0.6",
-    r"$\beta$=0.7",
-    r"$\beta$=0.8",
-    r"$\beta$=0.9",
-    r"$\beta$=1.0",
-]
+beta = [rf"$\beta$={b}" for b in BETAS]
 
 # 5 catEGORIES
 if cat == 5:

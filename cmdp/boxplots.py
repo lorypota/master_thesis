@@ -5,26 +5,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from common.config import R_MAX_VALUES
+from cmdp.config import R_MAX_VALUES
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--cat", default=5, type=int)
+parser.add_argument("--categories", default=5, type=int)
 parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
 
 gini = np.load(
-    os.path.join(SCRIPT_DIR, f"results/gini_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/gini_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_reb = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_reb_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/cost_reb_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_fail = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_fail_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/cost_fail_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_bikes = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_bikes_{args.cat}_cat_10seeds.npy")
+    os.path.join(SCRIPT_DIR, f"results/cost_bikes_{args.categories}_cat_10seeds.npy")
 ).transpose()
 
 r_max_labels = [str(r) for r in R_MAX_VALUES]
@@ -58,7 +58,8 @@ ax.tick_params(labelsize=34)
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_gini_{args.cat}_cat.png"), format="png"
+        os.path.join(SCRIPT_DIR, f"plots/boxplot_gini_{args.categories}_cat.png"),
+        format="png",
     )
 plt.show()
 
@@ -90,7 +91,7 @@ ax.tick_params(labelsize=34)
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_reb_{args.cat}_cat.png"),
+        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_reb_{args.categories}_cat.png"),
         format="png",
     )
 plt.show()
@@ -123,7 +124,9 @@ ax.tick_params(labelsize=34)
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_fails_{args.cat}_cat.png"),
+        os.path.join(
+            SCRIPT_DIR, f"plots/boxplot_costs_fails_{args.categories}_cat.png"
+        ),
         format="png",
     )
 plt.show()
@@ -156,7 +159,9 @@ ax.tick_params(labelsize=34)
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_bikes_{args.cat}_cat.png"),
+        os.path.join(
+            SCRIPT_DIR, f"plots/boxplot_costs_bikes_{args.categories}_cat.png"
+        ),
         format="png",
     )
 plt.show()

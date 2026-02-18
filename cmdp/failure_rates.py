@@ -5,19 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from common.config import R_MAX_VALUES
+from cmdp.config import R_MAX_VALUES, compute_failure_thresholds
+from common.config import get_scenario
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 5-category scenario: demand_params for cat 0 (constrained)
-# morning: (0.3, 2) -> threshold = r_max * 12 * 2
-# evening: (1.5, 0.3) -> threshold = r_max * 12 * 0.3
-DEMAND_LAMBDA_D = {
-    5: {0: [2, 0.3]},  # cat 0: [morning_lambda_d, evening_lambda_d]
-}
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--cat", default=5, type=int)
+parser.add_argument("--categories", default=5, type=int)
 parser.add_argument("--save", action="store_true")
 parser.add_argument(
     "--all-categories",
@@ -26,11 +20,15 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+scenario = get_scenario(args.categories)
+demand_params = scenario["demand_params"]
+active_cats = scenario["active_cats"]
+
 # Shape: (num_r_max, num_seeds, num_active_cats, 2) where last dim = [morning, evening]
 data = np.load(
     os.path.join(
         SCRIPT_DIR,
-        f"results/failure_rates_per_cat_period_{args.cat}_cat_10seeds.npy",
+        f"results/failure_rates_per_cat_period_{args.categories}_cat_10seeds.npy",
     )
 )
 
@@ -79,11 +77,14 @@ if args.all_categories:
         )
 
         # Overlay r_max threshold lines for constrained category (cat 0)
-        if cat_idx == 0 and args.cat in DEMAND_LAMBDA_D:
-            lambda_ds = DEMAND_LAMBDA_D[args.cat][0]
+        if cat_idx == 0:
+            constrained_cat = active_cats[0]
             for r_idx, r_max in enumerate(R_MAX_VALUES[:num_r_max]):
-                threshold_m = r_max * 12 * lambda_ds[0]
-                threshold_e = r_max * 12 * lambda_ds[1]
+                thresholds = compute_failure_thresholds(
+                    r_max, demand_params, active_cats, {constrained_cat}
+                )
+                threshold_m = thresholds[constrained_cat][0]
+                threshold_e = thresholds[constrained_cat][1]
                 ax.plot(
                     [r_idx - 0.4, r_idx + 0.4],
                     [threshold_m, threshold_m],
@@ -115,7 +116,7 @@ if args.all_categories:
         plt.savefig(
             os.path.join(
                 SCRIPT_DIR,
-                f"plots/failure_rates_all_cats_{args.cat}_cat.png",
+                f"plots/failure_rates_all_cats_{args.categories}_cat.png",
             ),
             format="png",
         )
@@ -156,29 +157,31 @@ else:
     )
 
     # Overlay r_max constraint thresholds
-    if args.cat in DEMAND_LAMBDA_D:
-        lambda_ds = DEMAND_LAMBDA_D[args.cat][0]
-        for r_idx, r_max in enumerate(R_MAX_VALUES[:num_r_max]):
-            threshold_m = r_max * 12 * lambda_ds[0]
-            threshold_e = r_max * 12 * lambda_ds[1]
-            lbl_m = "Morning threshold" if r_idx == 0 else None
-            lbl_e = "Evening threshold" if r_idx == 0 else None
-            ax.plot(
-                [r_idx - 0.4, r_idx + 0.4],
-                [threshold_m, threshold_m],
-                color="red",
-                linewidth=2,
-                linestyle="--",
-                label=lbl_m,
-            )
-            ax.plot(
-                [r_idx - 0.4, r_idx + 0.4],
-                [threshold_e, threshold_e],
-                color="darkred",
-                linewidth=2,
-                linestyle=":",
-                label=lbl_e,
-            )
+    constrained_cat = active_cats[0]
+    for r_idx, r_max in enumerate(R_MAX_VALUES[:num_r_max]):
+        thresholds = compute_failure_thresholds(
+            r_max, demand_params, active_cats, {constrained_cat}
+        )
+        threshold_m = thresholds[constrained_cat][0]
+        threshold_e = thresholds[constrained_cat][1]
+        lbl_m = "Morning threshold" if r_idx == 0 else None
+        lbl_e = "Evening threshold" if r_idx == 0 else None
+        ax.plot(
+            [r_idx - 0.4, r_idx + 0.4],
+            [threshold_m, threshold_m],
+            color="red",
+            linewidth=2,
+            linestyle="--",
+            label=lbl_m,
+        )
+        ax.plot(
+            [r_idx - 0.4, r_idx + 0.4],
+            [threshold_e, threshold_e],
+            color="darkred",
+            linewidth=2,
+            linestyle=":",
+            label=lbl_e,
+        )
 
     ax.set_xlabel(r"$r_{max}$", fontsize=36)
     ax.set_ylabel("Avg. failures per station", fontsize=28)
@@ -193,7 +196,7 @@ else:
         plt.savefig(
             os.path.join(
                 SCRIPT_DIR,
-                f"plots/failure_rates_cat0_{args.cat}_cat.png",
+                f"plots/failure_rates_cat0_{args.categories}_cat.png",
             ),
             format="png",
         )

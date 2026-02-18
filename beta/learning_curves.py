@@ -9,7 +9,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", action="store_true")
-parser.add_argument("--cat", default=0, type=int)
+parser.add_argument("--categories", default=0, type=int)
 args = parser.parse_args()
 
 
@@ -30,13 +30,19 @@ rewards_05 = np.zeros((num_seeds, num_episodes))
 rewards_1 = np.zeros((num_seeds, num_episodes))
 for s in range(100, 110):
     test_0 = np.load(
-        os.path.join(SCRIPT_DIR, f"results/learning_curve_{args.cat}_cat_0.0_{s}.npy")
+        os.path.join(
+            SCRIPT_DIR, f"results/learning_curve_{args.categories}_cat_0.0_{s}.npy"
+        )
     )
     test_05 = np.load(
-        os.path.join(SCRIPT_DIR, f"results/learning_curve_{args.cat}_cat_0.5_{s}.npy")
+        os.path.join(
+            SCRIPT_DIR, f"results/learning_curve_{args.categories}_cat_0.5_{s}.npy"
+        )
     )
     test_1 = np.load(
-        os.path.join(SCRIPT_DIR, f"results/learning_curve_{args.cat}_cat_1.0_{s}.npy")
+        os.path.join(
+            SCRIPT_DIR, f"results/learning_curve_{args.categories}_cat_1.0_{s}.npy"
+        )
     )
     rewards_0[s - 100] = test_0
     rewards_05[s - 100] = test_05
@@ -79,7 +85,7 @@ plt.ylabel("Daily Return", fontsize=36)
 plt.xticks(
     (0, 20000, 40000, 60000, 80000, 100000), ["0", "20k", "40k", "60k", "80k", "100k"]
 )
-if args.cat == 5:
+if args.categories == 5:
     plt.yticks(
         (-1000, -2000, -3000, -4000, -5000, -6000),
         ["-1k", "-2k", "-3k", "-4k", "-5k", "-6k"],
@@ -96,11 +102,11 @@ plt.tight_layout()
 
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.cat}_cat.pdf"),
+        os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.categories}_cat.pdf"),
         format="pdf",
     )
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.cat}_cat.png"),
+        os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.categories}_cat.png"),
         format="png",
     )
 

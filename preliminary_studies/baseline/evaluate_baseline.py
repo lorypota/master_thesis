@@ -26,9 +26,10 @@ import random
 import inequalipy as ineq
 import numpy as np
 
+from beta.config import BETAS
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
-from common.config import BETAS, GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
+from common.config import GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
 from common.demand import generate_global_demand
 from common.network import generate_network
 

@@ -2,12 +2,13 @@ import os
 import sys
 from datetime import datetime
 
+from beta.config import BETAS
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 seeds = range(100, 110)
 categories = [5]
-betas = [round(b * 0.1, 1) for b in range(11)]
 
 run_group = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -17,7 +18,7 @@ training_script = os.path.join(SCRIPT_DIR, "training.py")
 
 for s in seeds:
     for c in categories:
-        for b in betas:
+        for b in BETAS:
             cmd = f"uv run {training_script} --beta {b} --categories {c} --seed {s} --run-group {run_group}"
 
             print(f"Running: {cmd}")

@@ -30,110 +30,104 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-r_max_to_plot = args.r_max_values if args.r_max_values else REPRESENTATIVE_R_MAX
 seeds = list(range(args.seeds[0], args.seeds[1]))
-num_seeds = len(seeds)
 
-colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2"]
-
-sns.set(style="whitegrid")
-fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
-
-legend_handles = []
-
-for r_idx, r_max in enumerate(r_max_to_plot):
-    color = colors[r_idx % len(colors)]
-
-    # Collect lambda histories across seeds
-    all_morning = []
-    all_evening = []
-
-    for seed in seeds:
-        fpath = os.path.join(
-            SCRIPT_DIR,
-            f"results/lambda_history_{args.categories}_cat_{r_max}_{seed}.pkl",
-        )
-        with open(fpath, "rb") as f:
-            history = pickle.load(f)
-
-        # Extract constrained category (cat 0) lambda values
-        # Each entry: (repeat, day, {cat: [lambda_morning, lambda_evening]})
-        morning_vals = []
-        evening_vals = []
-        for _repeat, _day, lambdas in history:
-            # Use first constrained category (cat 0)
-            cat_key = list(lambdas.keys())[0]
-            morning_vals.append(lambdas[cat_key][0])
-            evening_vals.append(lambdas[cat_key][1])
-
-        all_morning.append(morning_vals)
-        all_evening.append(evening_vals)
-
-    # Align to shortest length across seeds
-    min_len = min(len(m) for m in all_morning)
-    morning_arr = np.array([m[:min_len] for m in all_morning])
-    evening_arr = np.array([e[:min_len] for e in all_evening])
-
-    steps = np.arange(min_len)
-
-    # Mean and 95% CI
-    morning_mean = np.mean(morning_arr, axis=0)
-    morning_std = np.std(morning_arr, axis=0)
-    evening_mean = np.mean(evening_arr, axis=0)
-    evening_std = np.std(evening_arr, axis=0)
-
-    ax.plot(
-        steps,
-        morning_mean,
-        color=color,
-        linestyle="-",
-        linewidth=1.5,
-        label=rf"$r_{{max}}$={r_max} morning",
-    )
-    ax.fill_between(
-        steps,
-        morning_mean - 1.96 * morning_std,
-        morning_mean + 1.96 * morning_std,
-        color=color,
-        alpha=0.15,
-    )
-
-    ax.plot(
-        steps,
-        evening_mean,
-        color=color,
-        linestyle="--",
-        linewidth=1.5,
-        label=rf"$r_{{max}}$={r_max} evening",
-    )
-    ax.fill_between(
-        steps,
-        evening_mean - 1.96 * evening_std,
-        evening_mean + 1.96 * evening_std,
-        color=color,
-        alpha=0.08,
-    )
-
-    # Legend patches
-    legend_handles.append(mpatches.Patch(color=color, label=rf"$r_{{max}}$={r_max}"))
-
-ax.set_xlabel("Dual update step", fontsize=26)
-ax.set_ylabel(r"$\lambda$", fontsize=26)
-ax.tick_params(labelsize=22)
-ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
+GROUPS = [
+    ("tight", [0.05, 0.075, 0.10, 0.125, 0.15]),
+]
+colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 
 style_handles = [
     Line2D([0], [0], color="black", linestyle="-", linewidth=1.5, label="Morning"),
     Line2D([0], [0], color="black", linestyle="--", linewidth=1.5, label="Evening"),
 ]
-ax.legend(
-    handles=legend_handles + style_handles, fontsize=18, loc="best", framealpha=0.4
-)
 
-plt.tight_layout()
-if args.save:
-    plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/lambda_convergence_{args.categories}_cat.png"),
-        format="png",
+
+def _fmt(v):
+    if v == int(v):
+        return str(int(v))
+    s = f"{v:g}"
+    return s[1:] if s.startswith("0.") else s
+
+
+def plot_group(r_max_list, group_name, shading=True):
+    sns.set(style="whitegrid")
+    fig, ax = plt.subplots(figsize=(12, 7), dpi=100)
+    legend_handles = []
+
+    for r_idx, r_max in enumerate(r_max_list):
+        color = colors[r_idx % len(colors)]
+        all_morning, all_evening = [], []
+
+        for seed in seeds:
+            fpath = os.path.join(
+                SCRIPT_DIR,
+                f"results/lambda_history_{args.categories}_cat_{r_max}_{seed}.pkl",
+            )
+            with open(fpath, "rb") as f:
+                history = pickle.load(f)
+
+            morning_vals, evening_vals = [], []
+            for _repeat, _day, lambdas in history:
+                cat_key = list(lambdas.keys())[0]
+                morning_vals.append(lambdas[cat_key][0])
+                evening_vals.append(lambdas[cat_key][1])
+
+            all_morning.append(morning_vals)
+            all_evening.append(evening_vals)
+
+        min_len = min(len(m) for m in all_morning)
+        morning_arr = np.array([m[:min_len] for m in all_morning])
+        evening_arr = np.array([e[:min_len] for e in all_evening])
+        steps = np.arange(min_len)
+
+        morning_mean = np.mean(morning_arr, axis=0)
+        morning_std = np.std(morning_arr, axis=0)
+        evening_mean = np.mean(evening_arr, axis=0)
+        evening_std = np.std(evening_arr, axis=0)
+
+        ax.plot(steps, morning_mean, color=color, linestyle="-", linewidth=1.5)
+        if shading:
+            ax.fill_between(
+                steps,
+                morning_mean - 1.96 * morning_std,
+                morning_mean + 1.96 * morning_std,
+                color=color,
+                alpha=0.15,
+            )
+
+        ax.plot(steps, evening_mean, color=color, linestyle="--", linewidth=1.5)
+        if shading:
+            ax.fill_between(
+                steps,
+                evening_mean - 1.96 * evening_std,
+                evening_mean + 1.96 * evening_std,
+                color=color,
+                alpha=0.08,
+            )
+
+        legend_handles.append(
+            mpatches.Patch(color=color, label=rf"$r_{{max}}$={_fmt(r_max)}")
+        )
+
+    ax.set_xlabel("Dual update step", fontsize=26)
+    ax.set_ylabel(r"$\lambda$", fontsize=26)
+    ax.tick_params(labelsize=22)
+    ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
+    ax.legend(
+        handles=legend_handles + style_handles, fontsize=18, loc="best", framealpha=0.4
     )
-plt.show()
+    plt.tight_layout()
+
+    if args.save:
+        plt.savefig(
+            os.path.join(
+                SCRIPT_DIR,
+                f"plots/lambda_convergence_{args.categories}_cat_{group_name}.png",
+            ),
+            format="png",
+        )
+    plt.show()
+
+
+plot_group(GROUPS[0][1], GROUPS[0][0], shading=True)

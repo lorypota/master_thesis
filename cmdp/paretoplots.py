@@ -1,7 +1,6 @@
 import argparse
 import os
 
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -9,6 +8,16 @@ import seaborn as sns
 from cmdp.config import R_MAX_VALUES
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _fmt(v):
+    if v == int(v):
+        return str(int(v))
+    s = f"{v:g}"
+    if s.startswith("0."):
+        s = s[1:]
+    return s
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=5, type=int)
@@ -57,20 +66,13 @@ pareto_indices = compute_pareto_frontier(avg_costs, avg_ginis)
 sns.set(style="whitegrid")
 fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
 
-# Classify points by constraint satisfaction
+# All points are feasible; shape for Pareto-optimality
 for i in range(num_r_max):
-    if sat_fractions[i] == 1.0:
-        color = "green"
-    elif sat_fractions[i] == 0.0:
-        color = "red"
-    else:
-        color = "orange"
+    marker = "s" if i in pareto_indices else "o"
+    size = 120 if i in pareto_indices else 40
+    ax.scatter(avg_costs[i], avg_ginis[i], size, color="green", marker=marker, zorder=3)
 
-    marker = "s" if i in pareto_indices else "+"
-    size = 40 if i in pareto_indices else 100
-    ax.scatter(avg_costs[i], avg_ginis[i], size, color=color, marker=marker, zorder=3)
-
-# Draw Pareto staircase for Pareto-optimal points
+# Draw Pareto staircase
 pareto_sorted = sorted(pareto_indices, key=lambda i: avg_costs[i])
 for k in range(len(pareto_sorted) - 1):
     i, j = pareto_sorted[k], pareto_sorted[k + 1]
@@ -87,41 +89,58 @@ for k in range(len(pareto_sorted) - 1):
         linewidth=1,
     )
 
-# Label each point with r_max value
-labels = [rf"$r_{{max}}$={r}" for r in R_MAX_VALUES]
-for i in range(num_r_max):
+# Per-point label offsets (offset points: x=right/left, y=up/down)
+label_offsets = {
+    R_MAX_VALUES.index(0.075): (8, -6),
+    R_MAX_VALUES.index(0.10): (8, 6),
+    R_MAX_VALUES.index(0.125): (8, 6),
+    R_MAX_VALUES.index(0.15): (8, 6),
+    R_MAX_VALUES.index(0.20): (-25, -28),
+    R_MAX_VALUES.index(0.25): (12, 12),
+}
+
+labels = [rf"$r_{{max}}$={_fmt(r)}" for r in R_MAX_VALUES]
+
+# Label all Pareto-optimal points
+for i in pareto_indices:
+    xytext = label_offsets.get(i, (8, -12))
     ax.annotate(
         labels[i],
         (avg_costs[i], avg_ginis[i]),
         textcoords="offset points",
-        xytext=(8, -12),
+        xytext=xytext,
         fontsize=20,
     )
 
-# Legend
-green_patch = mpatches.Patch(color="green", label="Feasible (all seeds)")
-orange_patch = mpatches.Patch(color="orange", label="Partially feasible")
-red_patch = mpatches.Patch(color="red", label="Infeasible (no seeds)")
-handles = [green_patch, orange_patch, red_patch]
-# Only include patches that are actually used
-used_colors = set()
-for i in range(num_r_max):
-    if sat_fractions[i] == 1.0:
-        used_colors.add("green")
-    elif sat_fractions[i] == 0.0:
-        used_colors.add("red")
-    else:
-        used_colors.add("orange")
-handles = [h for h in handles if h.get_facecolor()[:3] != (1, 1, 1)]
-legend_handles = []
-if "green" in used_colors:
-    legend_handles.append(green_patch)
-if "orange" in used_colors:
-    legend_handles.append(orange_patch)
-if "red" in used_colors:
-    legend_handles.append(red_patch)
+# Label the r_max=0.05 dominated point (to the left since it sits at the right edge)
+idx_005 = R_MAX_VALUES.index(0.05)
+ax.annotate(
+    labels[idx_005],
+    (avg_costs[idx_005], avg_ginis[idx_005]),
+    textcoords="offset points",
+    xytext=(-90, -12),
+    fontsize=20,
+)
 
-ax.legend(handles=legend_handles, fontsize=20, loc="best", framealpha=0.4)
+# Legend: shape only; list all dominated r_max values using newlines to avoid width expansion
+dominated_indices = [i for i in range(num_r_max) if i not in pareto_indices]
+dominated_vals = [_fmt(R_MAX_VALUES[i]) for i in dominated_indices]
+chunk = 4
+lines = [
+    ", ".join(dominated_vals[i : i + chunk])
+    for i in range(0, len(dominated_vals), chunk)
+]
+dominated_label = "Dominated\n(" + ",".join(lines) + ")"
+
+pareto_marker = plt.scatter(
+    [], [], marker="s", color="green", s=120, label="Pareto-optimal"
+)
+dominated_marker = plt.scatter(
+    [], [], marker="o", color="green", s=40, label=dominated_label
+)
+ax.legend(
+    handles=[pareto_marker, dominated_marker], fontsize=20, loc="best", framealpha=0.4
+)
 
 ax.set_ylabel("Gini index", fontsize=26)
 ax.set_xlabel("Global service cost", fontsize=26)

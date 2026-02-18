@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from matplotlib.ticker import AutoLocator, FuncFormatter, MultipleLocator
 
 from cmdp.config import R_MAX_VALUES
 
@@ -27,13 +28,34 @@ cost_bikes = np.load(
     os.path.join(SCRIPT_DIR, f"results/cost_bikes_{args.categories}_cat_10seeds.npy")
 ).transpose()
 
-r_max_labels = [str(r) for r in R_MAX_VALUES]
+
+def _fmt(v):
+    if v == int(v):
+        return str(int(v))
+    s = f"{v:g}"
+    if s.startswith("0."):
+        s = s[1:]
+    return s
+
+
+def tick_fmt(val, pos):
+    if val == int(val):
+        return str(int(val))
+    s = f"{val:g}"
+    if s.startswith("0."):
+        s = s[1:]
+    elif s.startswith("-0."):
+        s = "-" + s[2:]
+    return s
+
+
+r_max_labels = [_fmt(r) for r in R_MAX_VALUES]
 num_r_max = len(R_MAX_VALUES)
 
 # GINI INDEX
 
 sns.set(style="whitegrid")
-fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
+fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
 box_color = sns.color_palette("viridis", 11)[7]
 box = ax.boxplot(gini, patch_artist=True, notch=False, vert=True, widths=0.6)
 for patch in box["boxes"]:
@@ -54,7 +76,10 @@ ax.set_ylabel("Gini index", fontsize=36)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 ax.set_xticks(range(1, num_r_max + 1))
 ax.set_xticklabels(r_max_labels, fontsize=34)
+ax.invert_xaxis()
 ax.tick_params(labelsize=34)
+ax.yaxis.set_major_locator(MultipleLocator(0.05))
+ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
 plt.tight_layout()
 if args.save:
     plt.savefig(
@@ -66,7 +91,7 @@ plt.show()
 # REBALANCING COSTS
 
 sns.set(style="whitegrid")
-fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
+fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
 box_color = sns.color_palette("viridis", 11)[2]
 box = ax.boxplot(cost_reb, patch_artist=True, notch=False, vert=True, widths=0.6)
 for patch in box["boxes"]:
@@ -83,11 +108,14 @@ for median in box["medians"]:
 for flier in box["fliers"]:
     flier.set(marker="o", color="red", alpha=0.75)
 ax.set_xlabel(r"$r_{max}$", fontsize=36)
-ax.set_ylabel("Weighted reb. op's", fontsize=36)
+ax.set_ylabel("Weighted rebal. operations", fontsize=26)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 ax.set_xticks(range(1, num_r_max + 1))
 ax.set_xticklabels(r_max_labels, fontsize=34)
+ax.invert_xaxis()
 ax.tick_params(labelsize=34)
+ax.yaxis.set_major_locator(AutoLocator())
+ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
 plt.tight_layout()
 if args.save:
     plt.savefig(
@@ -99,7 +127,7 @@ plt.show()
 # FAILURE COSTS
 
 sns.set(style="whitegrid")
-fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
+fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
 box_color = sns.color_palette("viridis", 11)[2]
 box = ax.boxplot(cost_fail, patch_artist=True, notch=False, vert=True, widths=0.6)
 for patch in box["boxes"]:
@@ -120,7 +148,10 @@ ax.set_ylabel("Failure rate [%]", fontsize=36)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 ax.set_xticks(range(1, num_r_max + 1))
 ax.set_xticklabels(r_max_labels, fontsize=34)
+ax.invert_xaxis()
 ax.tick_params(labelsize=34)
+ax.yaxis.set_major_locator(AutoLocator())
+ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
 plt.tight_layout()
 if args.save:
     plt.savefig(
@@ -134,7 +165,7 @@ plt.show()
 # NUMBER OF VEHICLES
 
 sns.set(style="whitegrid")
-fig, ax = plt.subplots(figsize=(10, 6), dpi=100)
+fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
 box_color = sns.color_palette("viridis", 11)[2]
 box = ax.boxplot(cost_bikes, patch_artist=True, notch=False, vert=True, widths=0.6)
 for patch in box["boxes"]:
@@ -155,7 +186,10 @@ ax.set_ylabel("Number of vehicles", fontsize=36)
 ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
 ax.set_xticks(range(1, num_r_max + 1))
 ax.set_xticklabels(r_max_labels, fontsize=34)
+ax.invert_xaxis()
 ax.tick_params(labelsize=34)
+ax.yaxis.set_major_locator(AutoLocator())
+ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
 plt.tight_layout()
 if args.save:
     plt.savefig(

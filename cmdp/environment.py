@@ -75,7 +75,7 @@ class CMDPEnv:
         return state, failures
 
     def compute_reward(self, action, failures, mu):
-        rewards = np.zeros(self.num_stations)
+        base_rewards = np.zeros(self.num_stations)
         current_period = self.current_period
 
         for i in range(self.num_stations):
@@ -84,13 +84,8 @@ class CMDPEnv:
 
             rebalancing_penalty = 1 if action[i] != 0 else 0
 
-            rewards[i] -= failures[i]
-
-            # Lagrangian penalty only for constrained categories
-            if cat in self.lambdas:
-                rewards[i] -= self.lambdas[cat][current_period] * failures[i]
-
-            rewards[i] -= self.gamma * p["phi"] * rebalancing_penalty
+            base_rewards[i] -= failures[i]
+            base_rewards[i] -= self.gamma * p["phi"] * rebalancing_penalty
 
             if self.next_rebalancing_hour == 23:
                 target = p["evening_target"]
@@ -101,9 +96,16 @@ class CMDPEnv:
 
             deviation = abs(mu[i] - target)
             if deviation > threshold:
-                rewards[i] -= self.csi * (deviation - threshold)
+                base_rewards[i] -= self.csi * (deviation - threshold)
 
-        return rewards
+        # Lagrangian penalty on top of base reward
+        rewards = base_rewards.copy()
+        for i in range(self.num_stations):
+            cat = self.G.nodes[i]["station"]
+            if cat in self.lambdas:
+                rewards[i] -= self.lambdas[cat][current_period] * failures[i]
+
+        return rewards, base_rewards
 
     def reset(self):
         self.hour = 0
@@ -123,6 +125,6 @@ class CMDPEnv:
             mu[i] = self.G.nodes[i]["bikes"]
 
         state, failures = self.get_state()
-        reward = self.compute_reward(action, failures, mu)
+        reward, base_reward = self.compute_reward(action, failures, mu)
 
-        return state, reward, failures
+        return state, reward, base_reward, failures

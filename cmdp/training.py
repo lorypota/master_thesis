@@ -136,6 +136,7 @@ all_days_demand_vectors, transformed_demand_vectors = generate_global_demand(
 
 num_stations = np.sum(node_list)
 daily_returns = []
+daily_base_returns = []
 daily_failures = []
 np.random.seed(args.seed)
 random.seed(args.seed)
@@ -152,6 +153,7 @@ start = time.time()
 for repeat in range(args.num_repeats):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
+        base_ret = 0
         fails = 0
         cat_daily_fails = {cat: 0.0 for cat in active_cats}
         cat_period_fails = {cat: {} for cat in active_cats}
@@ -162,8 +164,9 @@ for repeat in range(args.num_repeats):
                     cat = G.nodes[i]["station"]
                     actions[i] = agents[cat].decide_action(state[i])
 
-            next_state, reward, failures = env.step(actions)
+            next_state, reward, base_reward, failures = env.step(actions)
             ret += np.sum(reward)
+            base_ret += np.sum(base_reward)
             fails += np.sum(failures)
 
             # Accumulate per-category per-period failures for dual update
@@ -220,6 +223,7 @@ for repeat in range(args.num_repeats):
         if not (repeat == 0 and day == 0):
             global_step += 1
             daily_returns.append(ret)
+            daily_base_returns.append(base_ret)
             daily_failures.append(fails)
 
             # wandb logging
@@ -229,6 +233,7 @@ for repeat in range(args.num_repeats):
                 "global_step": global_step,
                 "elapsed_time": time.time() - start,
                 "daily_return": ret,
+                "daily_base_return": base_ret,
                 "daily_failures": fails,
             }
             for cat in active_cats:
@@ -272,6 +277,13 @@ np.save(
         results_dir, f"learning_curve_{args.categories}_cat_{r_max}_{args.seed}.npy"
     ),
     daily_returns,
+)
+
+np.save(
+    os.path.join(
+        results_dir, f"base_learning_curve_{args.categories}_cat_{r_max}_{args.seed}.npy"
+    ),
+    daily_base_returns,
 )
 
 total_bikes = sum(G.nodes[i]["bikes"] for i in range(num_stations))

@@ -9,7 +9,6 @@ import seaborn as sns
 from matplotlib.lines import Line2D  # line style legend entries
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-R_MAX_VALUES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
 REPRESENTATIVE_R_MAX = [0.05, 0.15, 0.35]
 
 parser = argparse.ArgumentParser()

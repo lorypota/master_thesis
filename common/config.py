@@ -99,6 +99,9 @@ NUM_EVAL_DAYS = 101  # Days to run evaluation (first is skipped)
 TIME_SLOTS = [(0, 12), (12, 24)]
 BETAS = [round(b * 0.1, 1) for b in range(11)]
 
+# CMDP constraint threshold values
+R_MAX_VALUES = [0.05, 0.075, 0.10, 0.125, 0.15, 0.20, 0.25, 0.30, 0.35, 1]
+
 
 def build_station_params(raw):
     """Convert compact tuples to the dict format expected by FairEnv.

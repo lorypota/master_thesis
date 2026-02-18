@@ -2,11 +2,13 @@ import os
 import sys
 from datetime import datetime
 
+from common.config import R_MAX_VALUES
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 seeds = range(100, 110)
 categories = [5]
-r_max_values = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
+r_max_values = R_MAX_VALUES
 
 run_group = datetime.now().strftime("%Y%m%d_%H%M%S")
 

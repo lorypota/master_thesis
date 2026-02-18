@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from common.config import R_MAX_VALUES
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-R_MAX_VALUES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--cat", default=5, type=int)

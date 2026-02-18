@@ -32,12 +32,18 @@ import numpy as np
 
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
-from common.config import GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
+from common.config import (
+    GAMMA,
+    NUM_EVAL_DAYS,
+    PHI,
+    R_MAX_VALUES,
+    TIME_SLOTS,
+    get_scenario,
+)
 from common.demand import generate_global_demand
 from common.network import generate_network
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-R_MAX_VALUES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
 
 
 def main():
@@ -77,7 +83,9 @@ def main():
     active_cats = scenario["active_cats"]
     demand_params = scenario["demand_params"]
     station_params = scenario["station_params"]
-    constrained_cats = set(args.constrained_cats if args.constrained_cats is not None else active_cats)
+    constrained_cats = set(
+        args.constrained_cats if args.constrained_cats is not None else active_cats
+    )
 
     r_max_values = args.r_max_values if args.r_max_values else R_MAX_VALUES
 

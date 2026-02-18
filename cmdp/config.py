@@ -1,7 +1,9 @@
-R_MAX_VALUES = [0.05, 0.075, 0.10, 0.125, 0.15, 0.20, 0.25, 0.30, 0.35, 1]
+R_MAX_VALUES = [0.05, 0.075, 0.10, 0.125, 0.15, 0.20, 0.25, 0.30, 0.35, 1.0]
 
 
-def compute_failure_thresholds(r_max, demand_params, active_cats, constrained_cats=None):
+def compute_failure_thresholds(
+    r_max, demand_params, active_cats, constrained_cats=None
+):
     """Compute per-category failure thresholds for CMDP constraints.
 
     Args:

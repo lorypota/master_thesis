@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 from datetime import datetime
 
@@ -8,25 +9,62 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 seeds = range(100, 110)
 categories = [5]
-r_max_values = R_MAX_VALUES
+
+TOTAL_CORES = 20  # cores 0-19
+CORES_PER_PROCESS = TOTAL_CORES // len(R_MAX_VALUES)
 
 run_group = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-print("Starting CMDP training...")
+print(
+    f"Starting CMDP training (parallel: {len(R_MAX_VALUES)} r_max values, "
+    f"{CORES_PER_PROCESS} cores each)..."
+)
 
 training_script = os.path.join(SCRIPT_DIR, "training.py")
 
 for s in seeds:
     for c in categories:
-        for r in r_max_values:
-            cmd = f"uv run {training_script} --r-max {r} --categories {c} --seed {s} --run-group {run_group}"
+        processes = []
 
-            print(f"Running: {cmd}")
+        for i, r in enumerate(R_MAX_VALUES):
+            core_start = i * CORES_PER_PROCESS
+            core_end = core_start + CORES_PER_PROCESS - 1
+            cpu_cores = f"{core_start}-{core_end}"
 
-            # Run the command
-            exit_code = os.system(cmd)
+            cmd = [
+                "uv",
+                "run",
+                training_script,
+                "--r-max",
+                str(r),
+                "--categories",
+                str(c),
+                "--seed",
+                str(s),
+                "--run-group",
+                run_group,
+                "--cpu-cores",
+                cpu_cores,
+            ]
 
-            # Check for errors
+            print(f"  Launching r_max={r} on cores {cpu_cores}")
+            proc = subprocess.Popen(cmd)
+            processes.append((proc, r))
+
+        print(f"  Waiting for {len(processes)} processes (seed={s}, cat={c})...")
+
+        failed = False
+        for proc, r in processes:
+            exit_code = proc.wait()
             if exit_code != 0:
-                print(f"!!! Error encountered running: {cmd}")
-                sys.exit(1)
+                print(f"  !!! r_max={r} failed (exit code {exit_code})")
+                failed = True
+
+        if failed:
+            # Kill any still-running processes
+            for proc, _ in processes:
+                proc.kill()
+            print("Aborting due to failure.")
+            sys.exit(1)
+
+        print(f"  Seed {s} done.\n")

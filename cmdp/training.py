@@ -21,13 +21,6 @@ from common.config import (
 from common.demand import generate_global_demand
 from common.network import generate_network
 
-# Limit resource usage app-reken12
-# os.system(f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M -p {os.getpid()}")
-p = psutil.Process()
-p.cpu_affinity(
-    list(range(int(CPU_CORES.split("-")[0]), int(CPU_CORES.split("-")[1]) + 1))
-)
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
@@ -49,12 +42,25 @@ parser.add_argument(
     "--n-dual", default=100, type=int, help="Days between dual variable updates"
 )
 parser.add_argument(
-    "--num-repeats", default=50, type=int, help="Number of training repeats (default: 50)"
+    "--num-repeats",
+    default=50,
+    type=int,
+    help="Number of training repeats (default: 50)",
 )
 parser.add_argument(
     "--run-group", default=None, type=str, help="Wandb group ID for grouping runs"
 )
+parser.add_argument("--cpu-cores", default=CPU_CORES, type=str, help="CPU core range")
 args = parser.parse_args()
+
+# Limit resource usage app-reken12
+# os.system(f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M -p {os.getpid()}")
+p = psutil.Process()
+p.cpu_affinity(
+    list(
+        range(int(args.cpu_cores.split("-")[0]), int(args.cpu_cores.split("-")[1]) + 1)
+    )
+)
 
 r_max = args.r_max
 eta = args.eta
@@ -73,7 +79,9 @@ node_list = scenario["node_list"]
 active_cats = scenario["active_cats"]
 station_params = scenario["station_params"]
 
-constrained_cats = set(args.constrained_cats if args.constrained_cats is not None else active_cats)
+constrained_cats = set(
+    args.constrained_cats if args.constrained_cats is not None else active_cats
+)
 
 # =============================================================================
 # DUAL VARIABLE SETUP
@@ -281,7 +289,8 @@ np.save(
 
 np.save(
     os.path.join(
-        results_dir, f"base_learning_curve_{args.categories}_cat_{r_max}_{args.seed}.npy"
+        results_dir,
+        f"base_learning_curve_{args.categories}_cat_{r_max}_{args.seed}.npy",
     ),
     daily_base_returns,
 )

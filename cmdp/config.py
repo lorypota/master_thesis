@@ -1,5 +1,7 @@
 R_MAX_VALUES = [0.05, 0.075, 0.10, 0.125, 0.15, 0.20, 0.25, 0.30, 0.35, 1.0]
 
+TRAIN_UNTIL = {0: 50, 1: 50, 2: 37, 3: 55, 4: 110}
+
 
 def compute_failure_thresholds(
     r_max, demand_params, active_cats, constrained_cats=None

@@ -6,9 +6,9 @@ import time
 
 import numpy as np
 import psutil
-import wandb
 
-from cmdp.config import compute_failure_thresholds
+import wandb
+from cmdp.config import TRAIN_UNTIL, compute_failure_thresholds
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
 from common.config import (
@@ -16,7 +16,6 @@ from common.config import (
     GAMMA,
     NUM_TRAIN_DAYS,
     TIME_SLOTS,
-    TRAIN_UNTIL,
     get_scenario,
 )
 from common.demand import generate_global_demand

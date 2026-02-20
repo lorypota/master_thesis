@@ -6,8 +6,9 @@ import time
 
 import numpy as np
 import psutil
-import wandb
 
+import wandb
+from beta.config import TRAIN_UNTIL
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
 from common.config import (
@@ -15,7 +16,6 @@ from common.config import (
     GAMMA,
     NUM_TRAIN_DAYS,
     TIME_SLOTS,
-    TRAIN_UNTIL,
     get_scenario,
 )
 from common.demand import generate_global_demand

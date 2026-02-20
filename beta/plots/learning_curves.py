@@ -103,10 +103,6 @@ plt.tight_layout()
 
 if args.save:
     plt.savefig(
-        os.path.join(PLOT_DIR, f"learning_curves_{args.categories}_cat.pdf"),
-        format="pdf",
-    )
-    plt.savefig(
         os.path.join(PLOT_DIR, f"learning_curves_{args.categories}_cat.png"),
         format="png",
     )

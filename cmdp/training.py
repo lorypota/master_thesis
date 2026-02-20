@@ -8,7 +8,7 @@ import numpy as np
 import psutil
 
 import wandb
-from cmdp.config import TRAIN_UNTIL, compute_failure_thresholds
+from cmdp.config import compute_failure_thresholds
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
 from common.config import (
@@ -16,6 +16,7 @@ from common.config import (
     GAMMA,
     NUM_TRAIN_DAYS,
     TIME_SLOTS,
+    TRAIN_UNTIL,
     get_scenario,
 )
 from common.demand import generate_global_demand
@@ -100,6 +101,7 @@ failure_accumulator = {cat: [0.0, 0.0] for cat in lambdas}
 # Track failures for ALL active categories (not just constrained) for plotting
 all_cat_failure_accumulator = {cat: [0.0, 0.0] for cat in active_cats}
 base_return_accumulator = 0.0
+reb_cost_accumulator = 0.0
 day_counter = 0
 lambda_history = []
 dual_history = []  # (repeat, day, {cat: [morn_f_hat, eve_f_hat]}, avg_base_return)
@@ -159,6 +161,7 @@ for repeat in range(args.num_repeats):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
         base_ret = 0
+        reb_ret = 0
         fails = 0
         cat_daily_fails = {cat: 0.0 for cat in active_cats}
         cat_period_fails = {cat: {} for cat in active_cats}
@@ -169,9 +172,10 @@ for repeat in range(args.num_repeats):
                     cat = G.nodes[i]["station"]
                     actions[i] = agents[cat].decide_action(state[i])
 
-            next_state, reward, base_reward, failures = env.step(actions)
+            next_state, reward, base_reward, failures, reb_costs = env.step(actions)
             ret += np.sum(reward)
             base_ret += np.sum(base_reward)
+            reb_ret += np.sum(reb_costs)
             fails += np.sum(failures)
 
             # Accumulate per-category per-period failures for dual update
@@ -207,12 +211,11 @@ for repeat in range(args.num_repeats):
         dual_update_info = {}
         day_counter += 1
         base_return_accumulator += base_ret
+        reb_cost_accumulator += reb_ret
         if day_counter >= n_dual:
             # Compute f_hat for all active categories (for plotting)
             all_cat_f_hat = {
-                cat: [
-                    all_cat_failure_accumulator[cat][p] / n_dual for p in (0, 1)
-                ]
+                cat: [all_cat_failure_accumulator[cat][p] / n_dual for p in (0, 1)]
                 for cat in active_cats
             }
 
@@ -234,13 +237,20 @@ for repeat in range(args.num_repeats):
                 (repeat, day, {c: list(v) for c, v in lambdas.items()})
             )
             dual_history.append(
-                (repeat, day, all_cat_f_hat, base_return_accumulator / n_dual)
+                (
+                    repeat,
+                    day,
+                    all_cat_f_hat,
+                    base_return_accumulator / n_dual,
+                    reb_cost_accumulator / n_dual,
+                )
             )
 
             # Reset accumulators
             failure_accumulator = {cat: [0.0, 0.0] for cat in lambdas}
             all_cat_failure_accumulator = {cat: [0.0, 0.0] for cat in active_cats}
             base_return_accumulator = 0.0
+            reb_cost_accumulator = 0.0
             day_counter = 0
 
         if not (repeat == 0 and day == 0):

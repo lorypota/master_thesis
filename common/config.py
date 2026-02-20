@@ -91,6 +91,9 @@ SCENARIOS = {
     },
 }
 
+# Training duration per category (number of repeats)
+TRAIN_UNTIL = {0: 50, 1: 50, 2: 37, 3: 55, 4: 110}
+
 # Default hyperparameters
 GAMMA = 20  # Rebalancing cost coefficient
 NUM_TRAIN_DAYS = 1000

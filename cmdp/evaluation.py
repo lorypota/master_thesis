@@ -169,7 +169,7 @@ def main():
                             cat = G.nodes[i]["station"]
                             actions[i] = agents[cat].decide_action(state[i])
 
-                    next_state, _reward, _base_reward, failures = (
+                    next_state, _reward, _base_reward, failures, _reb_costs = (
                         eval_env.step(actions)
                     )
                     period = eval_env.current_period

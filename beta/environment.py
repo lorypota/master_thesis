@@ -64,16 +64,19 @@ class FairEnv:
 
     def compute_reward(self, action, failures, mu):
         rewards = np.zeros(self.num_stations)
+        reb_costs = np.zeros(self.num_stations)
 
         for i in range(self.num_stations):
             cat = self.G.nodes[i]["station"]
             p = self.station_params[cat]
 
             rebalancing_penalty = 1 if action[i] != 0 else 0
+            reb_cost = self.gamma * p["phi"] * rebalancing_penalty
 
             rewards[i] -= failures[i]
             rewards[i] -= self.beta * p["chi"] * failures[i]
-            rewards[i] -= self.gamma * p["phi"] * rebalancing_penalty
+            rewards[i] -= reb_cost
+            reb_costs[i] = reb_cost
 
             if self.next_rebalancing_hour == 23:
                 target = p["evening_target"]
@@ -86,7 +89,7 @@ class FairEnv:
             if deviation > threshold:
                 rewards[i] -= self.csi * (deviation - threshold)
 
-        return rewards
+        return rewards, reb_costs
 
     def reset(self):
         self.hour = 0
@@ -106,6 +109,6 @@ class FairEnv:
             mu[i] = self.G.nodes[i]["bikes"]
 
         state, failures = self.get_state()
-        reward = self.compute_reward(action, failures, mu)
+        reward, reb_costs = self.compute_reward(action, failures, mu)
 
-        return state, reward, failures
+        return state, reward, failures, reb_costs

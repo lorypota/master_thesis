@@ -8,7 +8,6 @@ import numpy as np
 import psutil
 
 import wandb
-from beta.config import TRAIN_UNTIL
 from beta.environment import FairEnv
 from common.agent import RebalancingAgent
 from common.config import (
@@ -16,6 +15,7 @@ from common.config import (
     GAMMA,
     NUM_TRAIN_DAYS,
     TIME_SLOTS,
+    TRAIN_UNTIL,
     get_scenario,
 )
 from common.demand import generate_global_demand
@@ -91,6 +91,7 @@ all_days_demand_vectors, transformed_demand_vectors = generate_global_demand(
 num_stations = np.sum(node_list)
 boundaries = scenario["boundaries"]
 daily_returns = []
+daily_reb_costs = []
 daily_failures = []
 np.random.seed(args.seed)
 random.seed(args.seed)
@@ -107,6 +108,7 @@ start = time.time()
 for repeat in range(110):
     for day in range(NUM_TRAIN_DAYS):
         ret = 0
+        reb_ret = 0
         fails = 0
         cat_daily_fails = {cat: 0.0 for cat in active_cats}
         for _times in (0, 1):
@@ -116,8 +118,9 @@ for repeat in range(110):
                     cat = G.nodes[i]["station"]
                     actions[i] = agents[cat].decide_action(state[i])
 
-            next_state, reward, failures = env.step(actions)
+            next_state, reward, failures, reb_costs = env.step(actions)
             ret += np.sum(reward)
+            reb_ret += np.sum(reb_costs)
             fails += np.sum(failures)
 
             for cat_idx, cat in enumerate(active_cats):
@@ -139,6 +142,7 @@ for repeat in range(110):
         if not (repeat == 0 and day == 0):
             global_step += 1
             daily_returns.append(ret)
+            daily_reb_costs.append(reb_ret)
             daily_failures.append(fails)
 
             log_dict = {
@@ -179,6 +183,13 @@ np.save(
         results_dir, f"learning_curve_{args.categories}_cat_{beta}_{args.seed}.npy"
     ),
     daily_returns,
+)
+
+np.save(
+    os.path.join(
+        results_dir, f"reb_costs_{args.categories}_cat_{beta}_{args.seed}.npy"
+    ),
+    daily_reb_costs,
 )
 
 print(

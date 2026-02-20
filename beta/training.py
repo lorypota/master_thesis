@@ -21,13 +21,6 @@ from common.config import (
 from common.demand import generate_global_demand
 from common.network import generate_network
 
-# Limit resource usage for app-reken12
-# os.system(f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M -p {os.getpid()}")
-p = psutil.Process()
-p.cpu_affinity(
-    list(range(int(CPU_CORES.split("-")[0]), int(CPU_CORES.split("-")[1]) + 1))
-)
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser()
@@ -40,7 +33,17 @@ parser.add_argument(
 parser.add_argument(
     "--run-group", default=None, type=str, help="Wandb group ID for grouping runs"
 )
+parser.add_argument("--cpu-cores", default=CPU_CORES, type=str, help="CPU core range")
 args = parser.parse_args()
+
+# Limit resource usage for app-reken12
+# os.system(f"procgov64 --nowait --minws 10M --maxws {MAX_MEMORY_MB}M -p {os.getpid()}")
+p = psutil.Process()
+p.cpu_affinity(
+    list(
+        range(int(args.cpu_cores.split("-")[0]), int(args.cpu_cores.split("-")[1]) + 1)
+    )
+)
 
 beta = args.beta
 output_dir = args.output_dir

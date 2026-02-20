@@ -8,7 +8,8 @@ import seaborn as sns
 from cmdp.config import R_MAX_VALUES, compute_failure_thresholds
 from common.config import get_scenario
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=5, type=int)
@@ -27,8 +28,8 @@ active_cats = scenario["active_cats"]
 # Shape: (num_r_max, num_seeds, num_active_cats, 2) where last dim = [morning, evening]
 data = np.load(
     os.path.join(
-        SCRIPT_DIR,
-        f"results/failure_rates_per_cat_period_{args.categories}_cat_10seeds.npy",
+        RESULTS_DIR,
+        f"failure_rates_per_cat_period_{args.categories}_cat_10seeds.npy",
     )
 )
 
@@ -115,8 +116,8 @@ if args.all_categories:
     if args.save:
         plt.savefig(
             os.path.join(
-                SCRIPT_DIR,
-                f"plots/failure_rates_all_cats_{args.categories}_cat.png",
+                PLOT_DIR,
+                f"failure_rates_all_cats_{args.categories}_cat.png",
             ),
             format="png",
         )
@@ -195,8 +196,8 @@ else:
     if args.save:
         plt.savefig(
             os.path.join(
-                SCRIPT_DIR,
-                f"plots/failure_rates_cat0_{args.categories}_cat.png",
+                PLOT_DIR,
+                f"failure_rates_cat0_{args.categories}_cat.png",
             ),
             format="png",
         )

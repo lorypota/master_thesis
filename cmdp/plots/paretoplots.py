@@ -7,7 +7,8 @@ import seaborn as sns
 
 from cmdp.config import R_MAX_VALUES
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 
 def _fmt(v):
@@ -26,13 +27,13 @@ args = parser.parse_args()
 cat = args.categories
 
 gini = np.load(
-    os.path.join(SCRIPT_DIR, f"results/gini_{cat}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"gini_{cat}_cat_10seeds.npy")
 ).transpose()
 cost = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_{cat}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"cost_{cat}_cat_10seeds.npy")
 ).transpose()
 constraint_sat = np.load(
-    os.path.join(SCRIPT_DIR, f"results/constraint_sat_{cat}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"constraint_sat_{cat}_cat_10seeds.npy")
 ).transpose()
 
 num_r_max = len(R_MAX_VALUES)
@@ -149,7 +150,7 @@ ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/pareto_costs_gini_{cat}_cat.png"),
+        os.path.join(PLOT_DIR, f"pareto_costs_gini_{cat}_cat.png"),
         format="png",
     )
 plt.show()

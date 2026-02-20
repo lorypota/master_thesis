@@ -8,7 +8,8 @@ import numpy as np
 import seaborn as sns
 from matplotlib.lines import Line2D  # line style legend entries
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 REPRESENTATIVE_R_MAX = [0.05, 0.15, 0.35]
 
 parser = argparse.ArgumentParser()
@@ -61,8 +62,8 @@ def plot_group(r_max_list, group_name, shading=True):
 
         for seed in seeds:
             fpath = os.path.join(
-                SCRIPT_DIR,
-                f"results/lambda_history_{args.categories}_cat_{r_max}_{seed}.pkl",
+                RESULTS_DIR,
+                f"lambda_history_{args.categories}_cat_{r_max}_{seed}.pkl",
             )
             with open(fpath, "rb") as f:
                 history = pickle.load(f)
@@ -122,8 +123,8 @@ def plot_group(r_max_list, group_name, shading=True):
     if args.save:
         plt.savefig(
             os.path.join(
-                SCRIPT_DIR,
-                f"plots/lambda_convergence_{args.categories}_cat_{group_name}.png",
+                PLOT_DIR,
+                f"lambda_convergence_{args.categories}_cat_{group_name}.png",
             ),
             format="png",
         )

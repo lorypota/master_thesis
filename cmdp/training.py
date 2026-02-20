@@ -97,8 +97,12 @@ failure_thresholds = compute_failure_thresholds(
 
 # Failure accumulator and tracking
 failure_accumulator = {cat: [0.0, 0.0] for cat in lambdas}
+# Track failures for ALL active categories (not just constrained) for plotting
+all_cat_failure_accumulator = {cat: [0.0, 0.0] for cat in active_cats}
+base_return_accumulator = 0.0
 day_counter = 0
 lambda_history = []
+dual_history = []  # (repeat, day, {cat: [morn_f_hat, eve_f_hat]}, avg_base_return)
 
 # =============================================================================
 # WANDB
@@ -178,6 +182,10 @@ for repeat in range(args.num_repeats):
                 )
                 cat_daily_fails[cat] += cat_failures
                 cat_period_fails[cat][period] = cat_failures / node_list[cat_idx]
+                # Track all categories for plotting
+                all_cat_failure_accumulator[cat][period] += (
+                    cat_failures / node_list[cat_idx]
+                )
                 if cat in failure_accumulator:
                     # Normalize by number of areas in this category
                     failure_accumulator[cat][period] += (
@@ -198,7 +206,16 @@ for repeat in range(args.num_repeats):
         # Dual variable update every n_dual days
         dual_update_info = {}
         day_counter += 1
+        base_return_accumulator += base_ret
         if day_counter >= n_dual:
+            # Compute f_hat for all active categories (for plotting)
+            all_cat_f_hat = {
+                cat: [
+                    all_cat_failure_accumulator[cat][p] / n_dual for p in (0, 1)
+                ]
+                for cat in active_cats
+            }
+
             for cat in list(failure_accumulator.keys()):
                 # Only update if this category is still training
                 if repeat < TRAIN_UNTIL[cat]:
@@ -212,13 +229,18 @@ for repeat in range(args.num_repeats):
                         dual_update_info[f"dual/cat{cat}_{pname}_violation"] = violation
                         lambdas[cat][p] = max(0.0, lambdas[cat][p] + eta * violation)
 
-            # Log snapshot
+            # Log snapshots
             lambda_history.append(
                 (repeat, day, {c: list(v) for c, v in lambdas.items()})
             )
+            dual_history.append(
+                (repeat, day, all_cat_f_hat, base_return_accumulator / n_dual)
+            )
 
-            # Reset accumulator
+            # Reset accumulators
             failure_accumulator = {cat: [0.0, 0.0] for cat in lambdas}
+            all_cat_failure_accumulator = {cat: [0.0, 0.0] for cat in active_cats}
+            base_return_accumulator = 0.0
             day_counter = 0
 
         if not (repeat == 0 and day == 0):
@@ -310,6 +332,14 @@ with open(
     "wb",
 ) as file:
     pickle.dump(dict(lambdas), file)
+
+with open(
+    os.path.join(
+        results_dir, f"dual_history_{args.categories}_cat_{r_max}_{args.seed}.pkl"
+    ),
+    "wb",
+) as file:
+    pickle.dump(dual_history, file)
 
 print(
     f"Finished simulation with seed: {args.seed}, categories: {args.categories} and r_max: {r_max}"

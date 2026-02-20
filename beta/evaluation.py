@@ -75,6 +75,7 @@ def main():
     costs_failures = [[] for _ in range(len(BETAS))]
     costs_bikes = [[] for _ in range(len(BETAS))]
     initial_bikes = [[] for _ in range(len(BETAS))]
+    failure_rates_per_cat = [[] for _ in range(len(BETAS))]
 
     for beta in BETAS:
         index = int(beta * 10)
@@ -205,6 +206,9 @@ def main():
                 costs_rebalancing[index].append(np.mean(daily_global_costs))
                 costs_failures[index].append(failure_rate_global)
                 costs_bikes[index].append(n_bikes)
+                failure_rates_per_cat[index].append(
+                    [cat_failure_rates[cat] for cat in active_cats]
+                )
 
             print(f"Gini={gini:.3f}, Cost={total_cost:.2f}")
 
@@ -233,6 +237,14 @@ def main():
         np.save(
             os.path.join(results_dir, f"initial_bikes_{M}_cat_{num_seeds}seeds.npy"),
             initial_bikes,
+        )
+        # Shape: (num_betas, num_seeds, num_cats)
+        np.save(
+            os.path.join(
+                results_dir,
+                f"failure_rates_per_cat_{M}_cat_{num_seeds}seeds.npy",
+            ),
+            failure_rates_per_cat,
         )
 
 

@@ -5,7 +5,8 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", action="store_true")
@@ -31,17 +32,17 @@ rewards_1 = np.zeros((num_seeds, num_episodes))
 for s in range(100, 110):
     test_0 = np.load(
         os.path.join(
-            SCRIPT_DIR, f"results/learning_curve_{args.categories}_cat_0.0_{s}.npy"
+            RESULTS_DIR, f"learning_curve_{args.categories}_cat_0.0_{s}.npy"
         )
     )
     test_05 = np.load(
         os.path.join(
-            SCRIPT_DIR, f"results/learning_curve_{args.categories}_cat_0.5_{s}.npy"
+            RESULTS_DIR, f"learning_curve_{args.categories}_cat_0.5_{s}.npy"
         )
     )
     test_1 = np.load(
         os.path.join(
-            SCRIPT_DIR, f"results/learning_curve_{args.categories}_cat_1.0_{s}.npy"
+            RESULTS_DIR, f"learning_curve_{args.categories}_cat_1.0_{s}.npy"
         )
     )
     rewards_0[s - 100] = test_0
@@ -102,11 +103,11 @@ plt.tight_layout()
 
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.categories}_cat.pdf"),
+        os.path.join(PLOT_DIR, f"learning_curves_{args.categories}_cat.pdf"),
         format="pdf",
     )
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/learning_curves_{args.categories}_cat.png"),
+        os.path.join(PLOT_DIR, f"learning_curves_{args.categories}_cat.png"),
         format="png",
     )
 

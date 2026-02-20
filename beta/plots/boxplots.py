@@ -7,7 +7,8 @@ import seaborn as sns
 
 from beta.config import BETAS
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=0, type=int)
@@ -15,16 +16,16 @@ parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
 
 gini = np.load(
-    os.path.join(SCRIPT_DIR, f"results/gini_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"gini_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_reb = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_reb_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"cost_reb_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_fail = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_fail_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"cost_fail_{args.categories}_cat_10seeds.npy")
 ).transpose()
 cost_bikes = np.load(
-    os.path.join(SCRIPT_DIR, f"results/cost_bikes_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"cost_bikes_{args.categories}_cat_10seeds.npy")
 ).transpose()
 beta_labels = [str(b) for b in BETAS]
 
@@ -67,7 +68,7 @@ ax.tick_params(axis="y")
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_gini_{args.categories}_cat.png"),
+        os.path.join(PLOT_DIR, f"boxplot_gini_{args.categories}_cat.png"),
         format="png",
     )
 plt.show()
@@ -110,7 +111,7 @@ ax.tick_params(axis="y")
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(SCRIPT_DIR, f"plots/boxplot_costs_reb_{args.categories}_cat.png"),
+        os.path.join(PLOT_DIR, f"boxplot_costs_reb_{args.categories}_cat.png"),
         format="png",
     )
 plt.show()
@@ -153,9 +154,7 @@ ax.tick_params(axis="y")
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(
-            SCRIPT_DIR, f"plots/boxplot_costs_fails_{args.categories}_cat.png"
-        ),
+        os.path.join(PLOT_DIR, f"boxplot_costs_fails_{args.categories}_cat.png"),
         format="png",
     )
 plt.show()
@@ -163,7 +162,7 @@ plt.show()
 # BIKES COSTS
 
 initial_bikes = np.load(
-    os.path.join(SCRIPT_DIR, f"results/initial_bikes_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, f"initial_bikes_{args.categories}_cat_10seeds.npy")
 ).transpose()[:, 0]
 mean = np.mean(initial_bikes)
 std_dev = np.std(initial_bikes)
@@ -209,9 +208,7 @@ ax.tick_params(axis="y")
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(
-            SCRIPT_DIR, f"plots/boxplot_costs_bikes_{args.categories}_cat.png"
-        ),
+        os.path.join(PLOT_DIR, f"boxplot_costs_bikes_{args.categories}_cat.png"),
         format="png",
     )
 plt.show()

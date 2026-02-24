@@ -11,7 +11,7 @@ PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--categories", default=0, type=int)
+parser.add_argument("--categories", default=5, type=int)
 parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
 

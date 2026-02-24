@@ -137,6 +137,8 @@ wandb.init(
 agents = {i: RebalancingAgent(i) for i in range(5)}
 
 G = generate_network(node_list)
+np.random.seed(args.seed)
+random.seed(args.seed)
 all_days_demand_vectors, transformed_demand_vectors = generate_global_demand(
     node_list, NUM_TRAIN_DAYS, demand_params, TIME_SLOTS
 )
@@ -145,8 +147,6 @@ num_stations = np.sum(node_list)
 daily_returns = []
 daily_base_returns = []
 daily_failures = []
-np.random.seed(args.seed)
-random.seed(args.seed)
 
 env = CMDPEnv(G, transformed_demand_vectors, lambdas, GAMMA, station_params)
 state = env.reset()

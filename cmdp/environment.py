@@ -21,6 +21,7 @@ class CMDPEnv:
         """
         self.G = graph
         self.demand_vectors = demand_vectors
+        self.num_days = len(demand_vectors)
         self.num_stations = len(list(self.G.nodes))
         self.hour = 0
         self.day = 0
@@ -69,7 +70,7 @@ class CMDPEnv:
         if self.next_rebalancing_hour == 11:
             self.day += 1
             self.hour = 0
-            if self.day == 1000:
+            if self.day == self.num_days:
                 self.day = 0
 
         return state, failures

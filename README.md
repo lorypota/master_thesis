@@ -16,18 +16,16 @@ FairMSS/
 │   ├── training.py                # Training script
 │   ├── evaluation.py              # Evaluation across beta values
 │   ├── run_training.py            # Batch training runner
-│   ├── boxplots.py                # Boxplot visualizations
-│   ├── paretoplots.py             # Pareto front plots
-│   ├── learning_curves.py         # Learning curve plots
+│   ├── plots/                     # Plotting scripts + generated figures
 │   ├── q_tables/                  # Trained Q-tables
-│   ├── results/                   # Evaluation outputs (.npy)
-│   └── plots/                     # Generated figures
+│   └── results/                   # Evaluation outputs (.npy)
 │
 ├── cmdp/                          # Lagrangian CMDP formulation
 │   ├── environment.py             # CMDPEnv with adaptive dual variables
 │   ├── training.py                # Training with Lagrangian dual updates
 │   ├── evaluation.py              # Evaluation with constraint checking
 │   ├── run_training.py            # Batch training runner
+│   ├── plots/                     # Plotting scripts + generated figures
 │   ├── q_tables/                  # Trained Q-tables
 │   └── results/                   # Evaluation outputs (.npy, .pkl)
 │
@@ -69,9 +67,9 @@ uv run beta/evaluation.py --categories 5 --seeds 100 110 --save-detailed
 ### Plotting
 
 ```bash
-uv run beta/boxplots.py --cat 5 --save
-uv run beta/paretoplots.py --cat 5 --save
-uv run beta/learning_curves.py --cat 5 --save
+uv run beta/plots/boxplots.py --categories 5 --save
+uv run beta/plots/paretoplots.py --categories 5 --save
+uv run beta/plots/learning_curves.py --categories 5 --save
 ```
 
 ## CMDP formulation
@@ -96,4 +94,12 @@ uv run python cmdp/evaluation.py --categories 2
 
 # With custom r_max values
 uv run python cmdp/evaluation.py --categories 2 --r-max-values 0.05 0.10 0.15 0.20 0.25
+```
+
+### Plotting
+
+```bash
+uv run cmdp/plots/boxplots.py --categories 5 --save
+uv run cmdp/plots/paretoplots.py --categories 5 --save
+uv run cmdp/plots/lambda_convergence.py --categories 5 --save
 ```

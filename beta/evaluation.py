@@ -37,6 +37,13 @@ from common.network import generate_network
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def fmt_token(value):
+    s = f"{value:.6f}".rstrip("0").rstrip(".")
+    if "." not in s:
+        s += ".0"
+    return s
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--categories", required=True, type=int, choices=[2, 3, 4, 5])
@@ -55,6 +62,7 @@ def main():
     args = parser.parse_args()
 
     M = args.categories
+    cat_dirname = f"cat{M}"
     scenario = get_scenario(M)
     node_list = scenario["node_list"]
     active_cats = scenario["active_cats"]
@@ -86,9 +94,12 @@ def main():
 
             np.random.seed(seed)
             random.seed(seed)
+            seed_results_dir = os.path.join(SCRIPT_DIR, "results", cat_dirname, f"seed{seed}")
+            seed_qtables_dir = os.path.join(SCRIPT_DIR, "q_tables", cat_dirname, f"seed{seed}")
+            b_token = f"b{fmt_token(beta)}"
 
             n_bikes = np.load(
-                os.path.join(SCRIPT_DIR, f"results/bikes_{M}_cat_{beta}_{seed}.npy")
+                os.path.join(seed_results_dir, f"bikes_{b_token}.npy")
             )
 
             G = generate_network(node_list)
@@ -101,9 +112,7 @@ def main():
             for cat in active_cats:
                 agent = RebalancingAgent(cat)
                 with open(
-                    os.path.join(
-                        SCRIPT_DIR, f"q_tables/q_table_{beta}_{M}_{seed}_cat{cat}.pkl"
-                    ),
+                    os.path.join(seed_qtables_dir, f"q_table_{b_token}_cat{cat}.pkl"),
                     "rb",
                 ) as f:
                     agent.q_table = pickle.load(f)
@@ -215,34 +224,35 @@ def main():
     # Save results
     print("\n" + "=" * 60)
     print("Saving results...")
-    results_dir = os.path.join(SCRIPT_DIR, "results")
+    results_dir = os.path.join(SCRIPT_DIR, "results", cat_dirname, "eval")
+    os.makedirs(results_dir, exist_ok=True)
     np.save(
-        os.path.join(results_dir, f"gini_{M}_cat_{num_seeds}seeds.npy"), gini_values_tot
+        os.path.join(results_dir, f"gini_{num_seeds}seeds.npy"), gini_values_tot
     )
-    np.save(os.path.join(results_dir, f"cost_{M}_cat_{num_seeds}seeds.npy"), costs_tot)
+    np.save(os.path.join(results_dir, f"cost_{num_seeds}seeds.npy"), costs_tot)
 
     if args.save_detailed:
         np.save(
-            os.path.join(results_dir, f"cost_reb_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"cost_reb_{num_seeds}seeds.npy"),
             costs_rebalancing,
         )
         np.save(
-            os.path.join(results_dir, f"cost_fail_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"cost_fail_{num_seeds}seeds.npy"),
             costs_failures,
         )
         np.save(
-            os.path.join(results_dir, f"cost_bikes_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"cost_bikes_{num_seeds}seeds.npy"),
             costs_bikes,
         )
         np.save(
-            os.path.join(results_dir, f"initial_bikes_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"initial_bikes_{num_seeds}seeds.npy"),
             initial_bikes,
         )
         # Shape: (num_betas, num_seeds, num_cats)
         np.save(
             os.path.join(
                 results_dir,
-                f"failure_rates_per_cat_{M}_cat_{num_seeds}seeds.npy",
+                f"failure_rates_per_cat_{num_seeds}seeds.npy",
             ),
             failure_rates_per_cat,
         )

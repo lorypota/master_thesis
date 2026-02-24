@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import pickle
 import random
@@ -8,7 +9,7 @@ import numpy as np
 import psutil
 
 import wandb
-from cmdp.config import compute_failure_thresholds
+from cmdp.config import compute_failure_thresholds, fmt_token
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
 from common.config import (
@@ -52,6 +53,12 @@ parser.add_argument(
     "--run-group", default=None, type=str, help="Wandb group ID for grouping runs"
 )
 parser.add_argument("--cpu-cores", default=CPU_CORES, type=str, help="CPU core range")
+parser.add_argument(
+    "--failure-cost-coef",
+    default=1.0,
+    type=float,
+    help="Coefficient for base failure penalty in CMDP reward",
+)
 args = parser.parse_args()
 
 # Limit resource usage app-reken12
@@ -68,6 +75,7 @@ eta = args.eta
 n_dual = args.n_dual
 output_dir = args.output_dir
 os.makedirs(output_dir, exist_ok=True)
+failure_cost_coef = args.failure_cost_coef
 
 
 # =============================================================================
@@ -79,6 +87,15 @@ demand_params = scenario["demand_params"]
 node_list = scenario["node_list"]
 active_cats = scenario["active_cats"]
 station_params = scenario["station_params"]
+r_token = f"r{fmt_token(r_max)}"
+bf_token = f"bf{fmt_token(failure_cost_coef)}"
+cat_dirname = f"cat{args.categories}"
+seed_dirname = f"seed{args.seed}"
+boundaries = scenario["boundaries"]
+q_tables_dir = os.path.join(output_dir, "q_tables", cat_dirname, seed_dirname)
+results_dir = os.path.join(output_dir, "results", cat_dirname, seed_dirname)
+os.makedirs(q_tables_dir, exist_ok=True)
+os.makedirs(results_dir, exist_ok=True)
 
 constrained_cats = set(
     args.constrained_cats if args.constrained_cats is not None else active_cats
@@ -87,8 +104,6 @@ constrained_cats = set(
 # =============================================================================
 # DUAL VARIABLE SETUP
 # =============================================================================
-
-boundaries = scenario["boundaries"]
 
 # Initialize dual variables (lambdas) for constrained categories only
 lambdas = {cat: [0.0, 0.0] for cat in active_cats if cat in constrained_cats}
@@ -113,10 +128,11 @@ dual_history = []  # (repeat, day, {cat: [morn_f_hat, eve_f_hat]}, avg_base_retu
 wandb.init(
     project="fairmss",
     group=f"cmdp-{args.categories}cat-{args.run_group}",
-    name=f"rmax{r_max}_seed{args.seed}",
+    name=f"rmax{r_max}_bf{failure_cost_coef}_seed{args.seed}",
     config={
         "method": "cmdp",
         "r_max": r_max,
+        "failure_cost_coef": failure_cost_coef,
         "categories": args.categories,
         "seed": args.seed,
         "eta": eta,
@@ -147,8 +163,24 @@ num_stations = np.sum(node_list)
 daily_returns = []
 daily_base_returns = []
 daily_failures = []
+daily_reb_costs = []
+daily_total_bikes = []
+daily_nonzero_actions = []
+daily_mean_abs_action = []
+daily_cat_failures = []
+daily_cat_period_failures = []
+daily_cat_bikes = []
+daily_cat_nonzero_actions = []
+daily_cat_mean_abs_action = []
 
-env = CMDPEnv(G, transformed_demand_vectors, lambdas, GAMMA, station_params)
+env = CMDPEnv(
+    G,
+    transformed_demand_vectors,
+    lambdas,
+    GAMMA,
+    station_params,
+    failure_cost_coef=failure_cost_coef,
+)
 state = env.reset()
 
 # =============================================================================
@@ -165,12 +197,25 @@ for repeat in range(args.num_repeats):
         fails = 0
         cat_daily_fails = {cat: 0.0 for cat in active_cats}
         cat_period_fails = {cat: {} for cat in active_cats}
+        cat_daily_nonzero_actions = {cat: 0 for cat in active_cats}
+        cat_daily_abs_actions = {cat: 0.0 for cat in active_cats}
+        nonzero_actions_day = 0
+        abs_actions_sum_day = 0.0
         for _times in (0, 1):
             actions = np.zeros(num_stations, dtype=np.int64)
             if not (repeat == 0 and day == 0):
                 for i in range(num_stations):
                     cat = G.nodes[i]["station"]
                     actions[i] = agents[cat].decide_action(state[i])
+
+            nonzero_actions_day += int(np.count_nonzero(actions))
+            abs_actions_sum_day += float(np.sum(np.abs(actions)))
+            for cat_idx, cat in enumerate(active_cats):
+                start_idx = boundaries[cat_idx]
+                end_idx = boundaries[cat_idx + 1]
+                cat_actions = actions[start_idx:end_idx]
+                cat_daily_nonzero_actions[cat] += int(np.count_nonzero(cat_actions))
+                cat_daily_abs_actions[cat] += float(np.sum(np.abs(cat_actions)))
 
             next_state, reward, base_reward, failures, reb_costs = env.step(actions)
             ret += np.sum(reward)
@@ -258,6 +303,34 @@ for repeat in range(args.num_repeats):
             daily_returns.append(ret)
             daily_base_returns.append(base_ret)
             daily_failures.append(fails)
+            daily_reb_costs.append(reb_ret)
+            daily_nonzero_actions.append(nonzero_actions_day)
+            daily_mean_abs_action.append(abs_actions_sum_day / (2 * num_stations))
+            daily_cat_failures.append([cat_daily_fails[cat] for cat in active_cats])
+            daily_cat_period_failures.append(
+                [
+                    [cat_period_fails[cat].get(0, 0.0), cat_period_fails[cat].get(1, 0.0)]
+                    for cat in active_cats
+                ]
+            )
+            daily_cat_nonzero_actions.append(
+                [cat_daily_nonzero_actions[cat] for cat in active_cats]
+            )
+            daily_cat_mean_abs_action.append(
+                [
+                    cat_daily_abs_actions[cat] / (2 * node_list[cat_idx])
+                    for cat_idx, cat in enumerate(active_cats)
+                ]
+            )
+            cat_bikes_end = []
+            for cat_idx, _cat in enumerate(active_cats):
+                start_idx = boundaries[cat_idx]
+                end_idx = boundaries[cat_idx + 1]
+                cat_bikes_end.append(
+                    int(sum(G.nodes[i]["bikes"] for i in range(start_idx, end_idx)))
+                )
+            daily_cat_bikes.append(cat_bikes_end)
+            daily_total_bikes.append(int(sum(cat_bikes_end)))
 
             # wandb logging
             log_dict = {
@@ -268,6 +341,10 @@ for repeat in range(args.num_repeats):
                 "daily_return": ret,
                 "daily_base_return": base_ret,
                 "daily_failures": fails,
+                "daily_reb_costs": reb_ret,
+                "daily_total_bikes": daily_total_bikes[-1],
+                "daily_nonzero_actions": nonzero_actions_day,
+                "daily_mean_abs_action": daily_mean_abs_action[-1],
             }
             for cat in active_cats:
                 log_dict[f"failures/cat{cat}"] = cat_daily_fails[cat]
@@ -291,65 +368,85 @@ wandb.finish()
 # SAVE RESULTS
 # =============================================================================
 
-q_tables_dir = os.path.join(output_dir, "q_tables")
-results_dir = os.path.join(output_dir, "results")
-os.makedirs(q_tables_dir, exist_ok=True)
-os.makedirs(results_dir, exist_ok=True)
-
 for cat in active_cats:
     with open(
-        os.path.join(
-            q_tables_dir, f"q_table_{r_max}_{args.categories}_{args.seed}_cat{cat}.pkl"
-        ),
+        os.path.join(q_tables_dir, f"q_table_{r_token}_{bf_token}_cat{cat}.pkl"),
         "wb",
     ) as file:
         pickle.dump(agents[cat].q_table, file)
 
 np.save(
-    os.path.join(
-        results_dir, f"learning_curve_{args.categories}_cat_{r_max}_{args.seed}.npy"
-    ),
+    os.path.join(results_dir, f"learning_curve_{r_token}_{bf_token}.npy"),
     daily_returns,
 )
 
 np.save(
-    os.path.join(
-        results_dir,
-        f"base_learning_curve_{args.categories}_cat_{r_max}_{args.seed}.npy",
-    ),
+    os.path.join(results_dir, f"base_learning_curve_{r_token}_{bf_token}.npy"),
     daily_base_returns,
 )
 
 total_bikes = sum(G.nodes[i]["bikes"] for i in range(num_stations))
 np.save(
-    os.path.join(results_dir, f"bikes_{args.categories}_cat_{r_max}_{args.seed}.npy"),
+    os.path.join(results_dir, f"bikes_{r_token}_{bf_token}.npy"),
     total_bikes,
 )
 
 # Save lambda history and final values
 with open(
-    os.path.join(
-        results_dir, f"lambda_history_{args.categories}_cat_{r_max}_{args.seed}.pkl"
-    ),
+    os.path.join(results_dir, f"lambda_history_{r_token}_{bf_token}.pkl"),
     "wb",
 ) as file:
     pickle.dump(lambda_history, file)
 
 with open(
-    os.path.join(
-        results_dir, f"final_lambdas_{args.categories}_cat_{r_max}_{args.seed}.pkl"
-    ),
+    os.path.join(results_dir, f"final_lambdas_{r_token}_{bf_token}.pkl"),
     "wb",
 ) as file:
     pickle.dump(dict(lambdas), file)
 
 with open(
-    os.path.join(
-        results_dir, f"dual_history_{args.categories}_cat_{r_max}_{args.seed}.pkl"
-    ),
+    os.path.join(results_dir, f"dual_history_{r_token}_{bf_token}.pkl"),
     "wb",
 ) as file:
     pickle.dump(dual_history, file)
+
+np.savez_compressed(
+    os.path.join(results_dir, f"train_diag_{r_token}_{bf_token}.npz"),
+    daily_return=np.asarray(daily_returns),
+    daily_base_return=np.asarray(daily_base_returns),
+    daily_failures=np.asarray(daily_failures),
+    daily_reb_costs=np.asarray(daily_reb_costs),
+    daily_total_bikes=np.asarray(daily_total_bikes),
+    daily_nonzero_actions=np.asarray(daily_nonzero_actions),
+    daily_mean_abs_action=np.asarray(daily_mean_abs_action),
+    daily_cat_failures=np.asarray(daily_cat_failures),
+    daily_cat_period_failures=np.asarray(daily_cat_period_failures),
+    daily_cat_bikes=np.asarray(daily_cat_bikes),
+    daily_cat_nonzero_actions=np.asarray(daily_cat_nonzero_actions),
+    daily_cat_mean_abs_action=np.asarray(daily_cat_mean_abs_action),
+)
+
+with open(os.path.join(results_dir, f"meta_{r_token}_{bf_token}.json"), "w") as file:
+    json.dump(
+        {
+            "args": vars(args),
+            "tokens": {"r": r_token, "bf": bf_token},
+            "scenario": {
+                "categories": args.categories,
+                "node_list": node_list,
+                "active_cats": active_cats,
+                "boundaries": boundaries.tolist(),
+            },
+            "constrained_cats": sorted(constrained_cats),
+            "failure_thresholds": {
+                str(cat): [float(v) for v in vals]
+                for cat, vals in failure_thresholds.items()
+            },
+            "train_until": {str(cat): v for cat, v in TRAIN_UNTIL.items()},
+        },
+        file,
+        indent=2,
+    )
 
 print(
     f"Finished simulation with seed: {args.seed}, categories: {args.categories} and r_max: {r_max}"

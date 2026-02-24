@@ -9,20 +9,16 @@ import seaborn as sns
 from beta.config import BETAS
 
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=0, type=int)
 parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
 cat = args.categories
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results", f"cat{cat}", "eval")
 
-gini = np.load(
-    os.path.join(RESULTS_DIR, f"gini_{cat}_cat_10seeds.npy")
-).transpose()
-cost = np.load(
-    os.path.join(RESULTS_DIR, f"cost_{cat}_cat_10seeds.npy")
-).transpose()
+gini = np.load(os.path.join(RESULTS_DIR, "gini_10seeds.npy")).transpose()
+cost = np.load(os.path.join(RESULTS_DIR, "cost_10seeds.npy")).transpose()
 
 sns.set(style="whitegrid")
 

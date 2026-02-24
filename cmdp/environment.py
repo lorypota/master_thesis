@@ -2,7 +2,15 @@ import numpy as np
 
 
 class CMDPEnv:
-    def __init__(self, graph, demand_vectors, lambdas, gamma, station_params):
+    def __init__(
+        self,
+        graph,
+        demand_vectors,
+        lambdas,
+        gamma,
+        station_params,
+        failure_cost_coef=1.0,
+    ):
         """
         Args:
             graph: NetworkX graph representing the MSS network.
@@ -30,6 +38,7 @@ class CMDPEnv:
         self.gamma = gamma
         self.csi = 0.3
         self.station_params = station_params
+        self.failure_cost_coef = failure_cost_coef
 
     @property
     def current_period(self):
@@ -87,7 +96,7 @@ class CMDPEnv:
             rebalancing_penalty = 1 if action[i] != 0 else 0
             reb_cost = self.gamma * p["phi"] * rebalancing_penalty
 
-            base_rewards[i] -= failures[i]
+            base_rewards[i] -= self.failure_cost_coef * failures[i]
             base_rewards[i] -= reb_cost
             reb_costs[i] = reb_cost
 

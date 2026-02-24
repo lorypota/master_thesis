@@ -21,11 +21,10 @@ import numpy as np
 import seaborn as sns
 from matplotlib.lines import Line2D
 
-from cmdp.config import R_MAX_VALUES
+from cmdp.config import R_MAX_VALUES, fmt_token
 from common.config import get_scenario
 
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=5, type=int)
@@ -37,10 +36,13 @@ parser.add_argument(
     default=[100, 110],
     help="Seed range [start, end)",
 )
+parser.add_argument("--failure-cost-coef", type=float, default=1.0)
 args = parser.parse_args()
 
 M = args.categories
 num_seeds = args.seeds[1] - args.seeds[0]
+bf_token = f"bf{fmt_token(args.failure_cost_coef)}"
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results", f"cat{M}", "eval")
 
 scenario = get_scenario(M)
 active_cats = scenario["active_cats"]
@@ -73,13 +75,19 @@ CATEGORY_COLORS = {
 data = np.load(
     os.path.join(
         RESULTS_DIR,
-        f"failure_rates_per_cat_period_{M}_cat_{num_seeds}seeds.npy",
+        f"failure_rates_per_cat_period_{num_seeds}seeds_{bf_token}.npy",
     )
 )
+if data.shape[0] != len(R_MAX_VALUES):
+    raise ValueError(
+        f"Expected {len(R_MAX_VALUES)} r_max points, found {data.shape[0]} in eval arrays"
+    )
+all_r_values = R_MAX_VALUES
 
-# Drop r_max 1.0 and 0.2 (similar results to 0.25); keep 0.25 as representative
-PLOT_R_MAX = [0.05, 0.075, 0.10, 0.125, 0.15, 0.25]
-keep_idx = [R_MAX_VALUES.index(v) for v in PLOT_R_MAX]
+# Plot a representative subset that adapts to the configured sweep.
+preferred = [0.05, 0.0625, 0.075, 0.0875, 0.10, 0.125, 0.15, 0.20, 0.25]
+PLOT_R_MAX = [v for v in preferred if v in all_r_values]
+keep_idx = [all_r_values.index(v) for v in PLOT_R_MAX]
 
 data = data[keep_idx]
 x = np.arange(len(PLOT_R_MAX))
@@ -97,7 +105,7 @@ for cat_idx, cat in enumerate(active_cats):
 rates = rates[::-1]
 
 # Load rebalancing costs: shape (num_r_max, num_seeds)
-reb_costs = np.load(os.path.join(RESULTS_DIR, f"cost_reb_{M}_cat_{num_seeds}seeds.npy"))
+reb_costs = np.load(os.path.join(RESULTS_DIR, f"cost_reb_{num_seeds}seeds_{bf_token}.npy"))
 reb_costs = np.array(reb_costs)[keep_idx][::-1]  # filter and reverse
 
 # Plot
@@ -181,7 +189,8 @@ ax.set_ylabel("Failure rate (%)", fontsize=20)
 ax.tick_params(labelsize=16)
 ax.set_xticks(x)
 xlabels = [f"{v * 100:g}" for v in reversed(PLOT_R_MAX)]
-xlabels[0] = "25=20=100"  # group 0.25, 0.2, 1.0 together
+if PLOT_R_MAX and all(v in all_r_values for v in (0.20, 1.0)) and PLOT_R_MAX[-1] in (0.20, 0.25):
+    xlabels[0] = "25=20=100" if 0.25 in PLOT_R_MAX else "20=100"
 ax.set_xticklabels(xlabels)
 
 # Combined legend with morning/evening note
@@ -229,7 +238,7 @@ ax.set_title(f"Failure rates by $r_{{max}}$ ({M} categories)", fontsize=22)
 plt.tight_layout()
 
 if args.save:
-    out_path = os.path.join(PLOT_DIR, f"failure_rates_by_rmax_{M}_cat.png")
+    out_path = os.path.join(PLOT_DIR, f"failure_rates_by_rmax_{M}_cat_{bf_token}.png")
     plt.savefig(out_path, format="png", bbox_inches="tight", dpi=150)
     print(f"Saved: {out_path}")
 

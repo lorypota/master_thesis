@@ -13,13 +13,22 @@ scripts = [
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", required=True, type=int)
+parser.add_argument("--failure-cost-coef", type=float, default=1.0)
 args = parser.parse_args()
 
 for script in scripts:
     print(f"\n{'='*60}\nRunning {script}...\n{'='*60}")
     env = {"MPLBACKEND": "Agg"}
     result = subprocess.run(
-        [sys.executable, script, "--categories", str(args.categories), "--save"],
+        [
+            sys.executable,
+            script,
+            "--categories",
+            str(args.categories),
+            "--save",
+            "--failure-cost-coef",
+            str(args.failure_cost_coef),
+        ],
         env={**__import__("os").environ, **env},
     )
     if result.returncode != 0:

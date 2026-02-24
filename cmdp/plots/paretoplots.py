@@ -5,10 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from cmdp.config import R_MAX_VALUES
+from cmdp.config import R_MAX_VALUES, fmt_token
 
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 
 def _fmt(v):
@@ -23,20 +22,27 @@ def _fmt(v):
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=5, type=int)
 parser.add_argument("--save", action="store_true")
+parser.add_argument("--failure-cost-coef", type=float, default=1.0)
 args = parser.parse_args()
 cat = args.categories
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results", f"cat{cat}", "eval")
+bf_token = f"bf{fmt_token(args.failure_cost_coef)}"
 
-gini = np.load(
-    os.path.join(RESULTS_DIR, f"gini_{cat}_cat_10seeds.npy")
-).transpose()
-cost = np.load(
-    os.path.join(RESULTS_DIR, f"cost_{cat}_cat_10seeds.npy")
-).transpose()
-constraint_sat = np.load(
-    os.path.join(RESULTS_DIR, f"constraint_sat_{cat}_cat_10seeds.npy")
-).transpose()
+gini_raw = np.load(os.path.join(RESULTS_DIR, f"gini_10seeds_{bf_token}.npy"))
+cost_raw = np.load(os.path.join(RESULTS_DIR, f"cost_10seeds_{bf_token}.npy"))
+constraint_sat_raw = np.load(
+    os.path.join(RESULTS_DIR, f"constraint_sat_10seeds_{bf_token}.npy")
+)
+if len(gini_raw) != len(R_MAX_VALUES):
+    raise ValueError(
+        f"Expected {len(R_MAX_VALUES)} r_max points, found {len(gini_raw)} in eval arrays"
+    )
+r_values = R_MAX_VALUES
+gini = gini_raw.transpose()
+cost = cost_raw.transpose()
+constraint_sat = constraint_sat_raw.transpose()
 
-num_r_max = len(R_MAX_VALUES)
+num_r_max = len(r_values)
 avg_ginis = [np.mean(gini[:, i]) for i in range(num_r_max)]
 avg_costs = [np.mean(cost[:, i]) for i in range(num_r_max)]
 # Fraction of seeds satisfying constraints per r_max
@@ -91,16 +97,19 @@ for k in range(len(pareto_sorted) - 1):
     )
 
 # Per-point label offsets (offset points: x=right/left, y=up/down)
-label_offsets = {
-    R_MAX_VALUES.index(0.075): (8, -6),
-    R_MAX_VALUES.index(0.10): (8, 6),
-    R_MAX_VALUES.index(0.125): (8, 6),
-    R_MAX_VALUES.index(0.15): (8, 6),
-    R_MAX_VALUES.index(0.20): (-25, -28),
-    R_MAX_VALUES.index(0.25): (12, 12),
-}
+label_offsets = {}
+for value, offset in [
+    (0.075, (8, -6)),
+    (0.10, (8, 6)),
+    (0.125, (8, 6)),
+    (0.15, (8, 6)),
+    (0.20, (-25, -28)),
+    (0.25, (12, 12)),
+]:
+    if value in r_values:
+        label_offsets[r_values.index(value)] = offset
 
-labels = [rf"$r_{{max}}$={_fmt(r)}" for r in R_MAX_VALUES]
+labels = [rf"$r_{{max}}$={_fmt(r)}" for r in r_values]
 
 # Label all Pareto-optimal points
 for i in pareto_indices:
@@ -114,18 +123,19 @@ for i in pareto_indices:
     )
 
 # Label the r_max=0.05 dominated point (to the left since it sits at the right edge)
-idx_005 = R_MAX_VALUES.index(0.05)
-ax.annotate(
-    labels[idx_005],
-    (avg_costs[idx_005], avg_ginis[idx_005]),
-    textcoords="offset points",
-    xytext=(-90, -12),
-    fontsize=20,
-)
+if 0.05 in r_values:
+    idx_005 = r_values.index(0.05)
+    ax.annotate(
+        labels[idx_005],
+        (avg_costs[idx_005], avg_ginis[idx_005]),
+        textcoords="offset points",
+        xytext=(-90, -12),
+        fontsize=20,
+    )
 
 # Legend: shape only; list all dominated r_max values using newlines to avoid width expansion
 dominated_indices = [i for i in range(num_r_max) if i not in pareto_indices]
-dominated_vals = [_fmt(R_MAX_VALUES[i]) for i in dominated_indices]
+dominated_vals = [_fmt(r_values[i]) for i in dominated_indices]
 chunk = 4
 lines = [
     ", ".join(dominated_vals[i : i + chunk])
@@ -150,7 +160,7 @@ ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(PLOT_DIR, f"pareto_costs_gini_{cat}_cat.png"),
+        os.path.join(PLOT_DIR, f"pareto_costs_gini_{cat}_cat_{bf_token}.png"),
         format="png",
     )
 plt.show()

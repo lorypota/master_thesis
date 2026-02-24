@@ -1,4 +1,11 @@
-R_MAX_VALUES = [0.05, 0.075, 0.10, 0.125, 0.15, 0.20, 0.25, 1.0]
+R_MAX_VALUES = [0.05, 0.0625, 0.075, 0.0875, 0.10, 0.125, 0.15, 0.20, 1.0]
+
+
+def fmt_token(value):
+    s = f"{value:.6f}".rstrip("0").rstrip(".")
+    if "." not in s:
+        s += ".0"
+    return s
 
 
 def compute_failure_thresholds(

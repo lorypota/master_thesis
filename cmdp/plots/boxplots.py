@@ -6,28 +6,33 @@ import numpy as np
 import seaborn as sns
 from matplotlib.ticker import AutoLocator, FuncFormatter, MultipleLocator
 
-from cmdp.config import R_MAX_VALUES
+from cmdp.config import R_MAX_VALUES, fmt_token
 
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=5, type=int)
 parser.add_argument("--save", action="store_true")
+parser.add_argument("--failure-cost-coef", type=float, default=1.0)
 args = parser.parse_args()
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results", f"cat{args.categories}", "eval")
+bf_token = f"bf{fmt_token(args.failure_cost_coef)}"
 
-gini = np.load(
-    os.path.join(RESULTS_DIR, f"gini_{args.categories}_cat_10seeds.npy")
-).transpose()
-cost_reb = np.load(
-    os.path.join(RESULTS_DIR, f"cost_reb_{args.categories}_cat_10seeds.npy")
-).transpose()
-cost_fail = np.load(
-    os.path.join(RESULTS_DIR, f"cost_fail_{args.categories}_cat_10seeds.npy")
-).transpose()
-cost_bikes = np.load(
-    os.path.join(RESULTS_DIR, f"cost_bikes_{args.categories}_cat_10seeds.npy")
-).transpose()
+gini_raw = np.load(os.path.join(RESULTS_DIR, f"gini_10seeds_{bf_token}.npy"))
+cost_reb_raw = np.load(os.path.join(RESULTS_DIR, f"cost_reb_10seeds_{bf_token}.npy"))
+cost_fail_raw = np.load(os.path.join(RESULTS_DIR, f"cost_fail_10seeds_{bf_token}.npy"))
+cost_bikes_raw = np.load(
+    os.path.join(RESULTS_DIR, f"cost_bikes_10seeds_{bf_token}.npy")
+)
+if len(gini_raw) != len(R_MAX_VALUES):
+    raise ValueError(
+        f"Expected {len(R_MAX_VALUES)} r_max points, found {len(gini_raw)} in eval arrays"
+    )
+r_values = R_MAX_VALUES
+gini = gini_raw.transpose()
+cost_reb = cost_reb_raw.transpose()
+cost_fail = cost_fail_raw.transpose()
+cost_bikes = cost_bikes_raw.transpose()
 
 
 def _fmt(v):
@@ -50,8 +55,8 @@ def tick_fmt(val, pos):
     return s
 
 
-r_max_labels = [_fmt(r) for r in R_MAX_VALUES]
-num_r_max = len(R_MAX_VALUES)
+r_max_labels = [_fmt(r) for r in r_values]
+num_r_max = len(r_values)
 
 # GINI INDEX
 
@@ -84,7 +89,7 @@ ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(PLOT_DIR, f"boxplot_gini_{args.categories}_cat.png"),
+        os.path.join(PLOT_DIR, f"boxplot_gini_{args.categories}_cat_{bf_token}.png"),
         format="png",
     )
 plt.show()
@@ -120,7 +125,9 @@ ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
 plt.tight_layout()
 if args.save:
     plt.savefig(
-        os.path.join(PLOT_DIR, f"boxplot_costs_reb_{args.categories}_cat.png"),
+        os.path.join(
+            PLOT_DIR, f"boxplot_costs_reb_{args.categories}_cat_{bf_token}.png"
+        ),
         format="png",
     )
 plt.show()
@@ -157,7 +164,7 @@ plt.tight_layout()
 if args.save:
     plt.savefig(
         os.path.join(
-            PLOT_DIR, f"boxplot_costs_fails_{args.categories}_cat.png"
+            PLOT_DIR, f"boxplot_costs_fails_{args.categories}_cat_{bf_token}.png"
         ),
         format="png",
     )
@@ -195,7 +202,7 @@ plt.tight_layout()
 if args.save:
     plt.savefig(
         os.path.join(
-            PLOT_DIR, f"boxplot_costs_bikes_{args.categories}_cat.png"
+            PLOT_DIR, f"boxplot_costs_bikes_{args.categories}_cat_{bf_token}.png"
         ),
         format="png",
     )

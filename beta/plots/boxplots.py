@@ -8,24 +8,24 @@ import seaborn as sns
 from beta.config import BETAS
 
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=5, type=int)
 parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results", f"cat{args.categories}", "eval")
 
 gini = np.load(
-    os.path.join(RESULTS_DIR, f"gini_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, "gini_10seeds.npy")
 ).transpose()
 cost_reb = np.load(
-    os.path.join(RESULTS_DIR, f"cost_reb_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, "cost_reb_10seeds.npy")
 ).transpose()
 cost_fail = np.load(
-    os.path.join(RESULTS_DIR, f"cost_fail_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, "cost_fail_10seeds.npy")
 ).transpose()
 cost_bikes = np.load(
-    os.path.join(RESULTS_DIR, f"cost_bikes_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, "cost_bikes_10seeds.npy")
 ).transpose()
 beta_labels = [str(b) for b in BETAS]
 
@@ -162,7 +162,7 @@ plt.show()
 # BIKES COSTS
 
 initial_bikes = np.load(
-    os.path.join(RESULTS_DIR, f"initial_bikes_{args.categories}_cat_10seeds.npy")
+    os.path.join(RESULTS_DIR, "initial_bikes_10seeds.npy")
 ).transpose()[:, 0]
 mean = np.mean(initial_bikes)
 std_dev = np.std(initial_bikes)

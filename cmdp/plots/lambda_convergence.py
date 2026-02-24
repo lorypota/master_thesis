@@ -8,8 +8,9 @@ import numpy as np
 import seaborn as sns
 from matplotlib.lines import Line2D  # line style legend entries
 
+from cmdp.config import fmt_token
+
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
 REPRESENTATIVE_R_MAX = [0.05, 0.15, 0.35]
 
 parser = argparse.ArgumentParser()
@@ -29,9 +30,11 @@ parser.add_argument(
     default=[100, 110],
     help="Seed range [start, end)",
 )
+parser.add_argument("--failure-cost-coef", type=float, default=1.0)
 args = parser.parse_args()
 
 seeds = list(range(args.seeds[0], args.seeds[1]))
+bf_token = f"bf{fmt_token(args.failure_cost_coef)}"
 
 GROUPS = [
     ("tight", [0.05, 0.075, 0.10, 0.125, 0.15]),
@@ -61,9 +64,12 @@ def plot_group(r_max_list, group_name, shading=True):
         all_morning, all_evening = [], []
 
         for seed in seeds:
+            seed_results_dir = os.path.join(
+                PLOT_DIR, "..", "results", f"cat{args.categories}", f"seed{seed}"
+            )
             fpath = os.path.join(
-                RESULTS_DIR,
-                f"lambda_history_{args.categories}_cat_{r_max}_{seed}.pkl",
+                seed_results_dir,
+                f"lambda_history_r{fmt_token(r_max)}_{bf_token}.pkl",
             )
             with open(fpath, "rb") as f:
                 history = pickle.load(f)
@@ -124,7 +130,7 @@ def plot_group(r_max_list, group_name, shading=True):
         plt.savefig(
             os.path.join(
                 PLOT_DIR,
-                f"lambda_convergence_{args.categories}_cat_{group_name}.png",
+                f"lambda_convergence_{args.categories}_cat_{group_name}_{bf_token}.png",
             ),
             format="png",
         )

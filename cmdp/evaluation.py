@@ -30,7 +30,7 @@ import random
 import inequalipy as ineq
 import numpy as np
 
-from cmdp.config import R_MAX_VALUES, compute_failure_thresholds
+from cmdp.config import R_MAX_VALUES, compute_failure_thresholds, fmt_token
 from cmdp.environment import CMDPEnv
 from common.agent import RebalancingAgent
 from common.config import GAMMA, NUM_EVAL_DAYS, PHI, TIME_SLOTS, get_scenario
@@ -69,9 +69,17 @@ def main():
         default=None,
         help="r_max values to evaluate",
     )
+    parser.add_argument(
+        "--failure-cost-coef",
+        type=float,
+        default=1.0,
+        help="Base failure coefficient token used in training filenames",
+    )
     args = parser.parse_args()
 
     M = args.categories
+    bf_token = f"bf{fmt_token(args.failure_cost_coef)}"
+    cat_dirname = f"cat{M}"
     scenario = get_scenario(M)
     node_list = scenario["node_list"]
     active_cats = scenario["active_cats"]
@@ -115,8 +123,11 @@ def main():
             np.random.seed(seed)
             random.seed(seed)
 
+            seed_results_dir = os.path.join(SCRIPT_DIR, "results", cat_dirname, f"seed{seed}")
+            seed_qtables_dir = os.path.join(SCRIPT_DIR, "q_tables", cat_dirname, f"seed{seed}")
+            r_token = f"r{fmt_token(r_max)}"
             n_bikes = np.load(
-                os.path.join(SCRIPT_DIR, f"results/bikes_{M}_cat_{r_max}_{seed}.npy")
+                os.path.join(seed_results_dir, f"bikes_{r_token}_{bf_token}.npy")
             )
 
             G = generate_network(node_list)
@@ -130,7 +141,7 @@ def main():
                 agent = RebalancingAgent(cat)
                 with open(
                     os.path.join(
-                        SCRIPT_DIR, f"q_tables/q_table_{r_max}_{M}_{seed}_cat{cat}.pkl"
+                        seed_qtables_dir, f"q_table_{r_token}_{bf_token}_cat{cat}.pkl"
                     ),
                     "rb",
                 ) as f:
@@ -292,42 +303,42 @@ def main():
     # Save results
     print("\n" + "=" * 60)
     print("Saving results...")
-    results_dir = os.path.join(SCRIPT_DIR, "results")
+    results_dir = os.path.join(SCRIPT_DIR, "results", cat_dirname, "eval")
     os.makedirs(results_dir, exist_ok=True)
 
     np.save(
-        os.path.join(results_dir, f"gini_{M}_cat_{num_seeds}seeds.npy"),
+        os.path.join(results_dir, f"gini_{num_seeds}seeds_{bf_token}.npy"),
         gini_values_tot,
     )
-    np.save(os.path.join(results_dir, f"cost_{M}_cat_{num_seeds}seeds.npy"), costs_tot)
+    np.save(os.path.join(results_dir, f"cost_{num_seeds}seeds_{bf_token}.npy"), costs_tot)
     np.save(
-        os.path.join(results_dir, f"constraint_sat_{M}_cat_{num_seeds}seeds.npy"),
+        os.path.join(results_dir, f"constraint_sat_{num_seeds}seeds_{bf_token}.npy"),
         constraint_satisfaction,
     )
 
     np.save(
         os.path.join(
             results_dir,
-            f"failure_rates_per_cat_period_{M}_cat_{num_seeds}seeds.npy",
+            f"failure_rates_per_cat_period_{num_seeds}seeds_{bf_token}.npy",
         ),
         failure_rates_per_cat_period,
     )
 
     if args.save_detailed:
         np.save(
-            os.path.join(results_dir, f"cost_reb_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"cost_reb_{num_seeds}seeds_{bf_token}.npy"),
             costs_rebalancing,
         )
         np.save(
-            os.path.join(results_dir, f"cost_fail_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"cost_fail_{num_seeds}seeds_{bf_token}.npy"),
             costs_failures,
         )
         np.save(
-            os.path.join(results_dir, f"cost_bikes_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"cost_bikes_{num_seeds}seeds_{bf_token}.npy"),
             costs_bikes,
         )
         np.save(
-            os.path.join(results_dir, f"initial_bikes_{M}_cat_{num_seeds}seeds.npy"),
+            os.path.join(results_dir, f"initial_bikes_{num_seeds}seeds_{bf_token}.npy"),
             initial_bikes,
         )
 

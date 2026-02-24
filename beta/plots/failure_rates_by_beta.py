@@ -24,7 +24,7 @@ from beta.config import BETAS
 from common.config import get_scenario
 
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
+RESULTS_DIR = None
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--categories", default=5, type=int)
@@ -32,14 +32,15 @@ parser.add_argument("--save", action="store_true")
 args = parser.parse_args()
 
 M = args.categories
+RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results", f"cat{M}", "eval")
 
 # Load per-category failure rates: shape (num_betas, num_seeds, num_cats)
-fr_file = os.path.join(RESULTS_DIR, f"failure_rates_per_cat_{M}_cat_10seeds.npy")
+fr_file = os.path.join(RESULTS_DIR, "failure_rates_per_cat_10seeds.npy")
 fr_data = np.load(fr_file)
 print(f"Loaded failure rates: {fr_data.shape}")
 
 # Load costs without penalty
-costs_file = os.path.join(RESULTS_DIR, f"cost_reb_{M}_cat_10seeds.npy")
+costs_file = os.path.join(RESULTS_DIR, "cost_reb_10seeds.npy")
 if os.path.exists(costs_file):
     costs_data = np.load(costs_file)
     costs_mean = np.array([np.mean(costs_data[i]) for i in range(len(BETAS))])

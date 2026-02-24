@@ -6,7 +6,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 PLOT_DIR = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(PLOT_DIR, "..", "results")
+
+
+def fmt_token(value):
+    s = f"{value:.6f}".rstrip("0").rstrip(".")
+    if "." not in s:
+        s += ".0"
+    return s
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", action="store_true")
@@ -30,20 +36,15 @@ rewards_0 = np.zeros((num_seeds, num_episodes))
 rewards_05 = np.zeros((num_seeds, num_episodes))
 rewards_1 = np.zeros((num_seeds, num_episodes))
 for s in range(100, 110):
+    seed_results_dir = os.path.join(PLOT_DIR, "..", "results", f"cat{args.categories}", f"seed{s}")
     test_0 = np.load(
-        os.path.join(
-            RESULTS_DIR, f"learning_curve_{args.categories}_cat_0.0_{s}.npy"
-        )
+        os.path.join(seed_results_dir, f"learning_curve_b{fmt_token(0.0)}.npy")
     )
     test_05 = np.load(
-        os.path.join(
-            RESULTS_DIR, f"learning_curve_{args.categories}_cat_0.5_{s}.npy"
-        )
+        os.path.join(seed_results_dir, f"learning_curve_b{fmt_token(0.5)}.npy")
     )
     test_1 = np.load(
-        os.path.join(
-            RESULTS_DIR, f"learning_curve_{args.categories}_cat_1.0_{s}.npy"
-        )
+        os.path.join(seed_results_dir, f"learning_curve_b{fmt_token(1.0)}.npy")
     )
     rewards_0[s - 100] = test_0
     rewards_05[s - 100] = test_05

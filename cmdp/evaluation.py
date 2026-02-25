@@ -9,7 +9,8 @@ and constraint satisfaction for constrained categories.
 Usage:
     uv run cmdp/evaluation.py --categories 2
     uv run cmdp/evaluation.py --categories 2 --r-max-values 0.20 0.25
-    uv run cmdp/evaluation.py --categories 5 --seeds 100 110 --save-detailed
+    uv run cmdp/evaluation.py --categories 5 --failure-cost-coef 1.0 --seeds 100 110 --save-detailed
+    uv run cmdp/evaluation.py --categories 5 --failure-cost-coef 0.0 --seeds 100 110 --save-detailed
 
 Output (saved to results/):
     results/gini_{M}_cat_{N}seeds.npy

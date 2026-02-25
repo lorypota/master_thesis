@@ -6,7 +6,7 @@ Plots per-category failure rates vs beta, with rebalancing costs on
 a secondary y-axis. Similar to preliminary_studies/failure_rate_analysis
 but for 5 categories.
 
-Requires: failure_rates_per_cat_{M}_cat_{N}seeds.npy from evaluation.py --save-detailed
+Requires: failure_rates_per_cat_{M}_cat_{N}seeds.npy from evaluation.py
 
 Usage:
     uv run beta/plots/failure_rates_by_beta.py --categories 5

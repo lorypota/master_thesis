@@ -1,3 +1,11 @@
+"""
+CMDP lambda convergence plots from saved lambda histories.
+
+Usage:
+    uv run cmdp/plots/lambda_convergence.py --categories 5 --failure-cost-coef 1.0
+    uv run cmdp/plots/lambda_convergence.py --categories 5 --failure-cost-coef 0.0 --save
+"""
+
 import argparse
 import os
 import pickle

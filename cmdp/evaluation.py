@@ -9,14 +9,13 @@ and constraint satisfaction for constrained categories.
 Usage:
     uv run cmdp/evaluation.py --categories 2
     uv run cmdp/evaluation.py --categories 2 --r-max-values 0.20 0.25
-    uv run cmdp/evaluation.py --categories 5 --failure-cost-coef 1.0 --seeds 100 110 --save-detailed
-    uv run cmdp/evaluation.py --categories 5 --failure-cost-coef 0.0 --seeds 100 110 --save-detailed
+    uv run cmdp/evaluation.py --categories 5 --failure-cost-coef 1.0 --seeds 100 110
+    uv run cmdp/evaluation.py --categories 5 --failure-cost-coef 0.0 --seeds 100 110
 
 Output (saved to results/):
     results/gini_{M}_cat_{N}seeds.npy
     results/cost_{M}_cat_{N}seeds.npy
     results/constraint_sat_{M}_cat_{N}seeds.npy
-    (with --save-detailed):
     results/cost_reb_{M}_cat_{N}seeds.npy
     results/cost_fail_{M}_cat_{N}seeds.npy
     results/cost_bikes_{M}_cat_{N}seeds.npy
@@ -50,11 +49,6 @@ def main():
         type=int,
         default=[100, 110],
         help="Seed range [start, end) (default: 100 110)",
-    )
-    parser.add_argument(
-        "--save-detailed",
-        action="store_true",
-        help="Save detailed cost breakdowns (rebalancing, failures, bikes, initial_bikes)",
     )
     parser.add_argument(
         "--constrained-cats",
@@ -222,7 +216,7 @@ def main():
                                 period_fails_today[cat][p]
                             )
 
-                if day == 0 and args.save_detailed:
+                if day == 0:
                     initial_bikes[r_idx].append(
                         sum(G.nodes[i]["bikes"] for i in range(num_stations))
                     )
@@ -282,10 +276,9 @@ def main():
             gini_values_tot[r_idx].append(gini)
             costs_tot[r_idx].append(total_cost)
             constraint_satisfaction[r_idx].append(satisfied)
-            if args.save_detailed:
-                costs_rebalancing[r_idx].append(np.mean(daily_global_costs))
-                costs_failures[r_idx].append(failure_rate_global)
-                costs_bikes[r_idx].append(n_bikes)
+            costs_rebalancing[r_idx].append(np.mean(daily_global_costs))
+            costs_failures[r_idx].append(failure_rate_global)
+            costs_bikes[r_idx].append(n_bikes)
 
             # Store per-category per-period failure rates
             seed_idx = seeds.index(seed)
@@ -325,23 +318,22 @@ def main():
         failure_rates_per_cat_period,
     )
 
-    if args.save_detailed:
-        np.save(
-            os.path.join(results_dir, f"cost_reb_{num_seeds}seeds_{bf_token}.npy"),
-            costs_rebalancing,
-        )
-        np.save(
-            os.path.join(results_dir, f"cost_fail_{num_seeds}seeds_{bf_token}.npy"),
-            costs_failures,
-        )
-        np.save(
-            os.path.join(results_dir, f"cost_bikes_{num_seeds}seeds_{bf_token}.npy"),
-            costs_bikes,
-        )
-        np.save(
-            os.path.join(results_dir, f"initial_bikes_{num_seeds}seeds_{bf_token}.npy"),
-            initial_bikes,
-        )
+    np.save(
+        os.path.join(results_dir, f"cost_reb_{num_seeds}seeds_{bf_token}.npy"),
+        costs_rebalancing,
+    )
+    np.save(
+        os.path.join(results_dir, f"cost_fail_{num_seeds}seeds_{bf_token}.npy"),
+        costs_failures,
+    )
+    np.save(
+        os.path.join(results_dir, f"cost_bikes_{num_seeds}seeds_{bf_token}.npy"),
+        costs_bikes,
+    )
+    np.save(
+        os.path.join(results_dir, f"initial_bikes_{num_seeds}seeds_{bf_token}.npy"),
+        initial_bikes,
+    )
 
 
 if __name__ == "__main__":

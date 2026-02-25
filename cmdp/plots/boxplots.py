@@ -1,3 +1,11 @@
+"""
+CMDP boxplots (Gini and cost components) from evaluation outputs.
+
+Usage:
+    uv run cmdp/plots/boxplots.py --categories 5 --failure-cost-coef 1.0
+    uv run cmdp/plots/boxplots.py --categories 5 --failure-cost-coef 0.0 --save
+"""
+
 import argparse
 import os
 

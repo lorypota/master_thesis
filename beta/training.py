@@ -1,3 +1,10 @@
+"""
+Beta training script.
+
+Usage:
+    uv run beta/training.py --beta 0.5 --categories 5 --seed 100
+"""
+
 import argparse
 import json
 import os

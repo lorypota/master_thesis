@@ -7,12 +7,11 @@ Computes failure rates, Gini coefficient, and global service cost.
 
 Usage:
     uv run beta/evaluation.py --categories 2
-    uv run beta/evaluation.py --categories 5 --seeds 100 110 --save-detailed
+    uv run beta/evaluation.py --categories 5 --seeds 100 110
 
 Output (saved to results/):
     results/gini_{M}_cat_{N}seeds.npy
     results/cost_{M}_cat_{N}seeds.npy
-    (with --save-detailed):
     results/cost_reb_{M}_cat_{N}seeds.npy
     results/cost_fail_{M}_cat_{N}seeds.npy
     results/cost_bikes_{M}_cat_{N}seeds.npy
@@ -53,11 +52,6 @@ def main():
         type=int,
         default=[100, 110],
         help="Seed range [start, end) (default: 100 110)",
-    )
-    parser.add_argument(
-        "--save-detailed",
-        action="store_true",
-        help="Save detailed cost breakdowns (rebalancing, failures, bikes, initial_bikes)",
     )
     args = parser.parse_args()
 
@@ -164,7 +158,7 @@ def main():
                     daily_global_failures.append(global_fails)
                     daily_global_costs.append(costs)
 
-                if day == 0 and args.save_detailed:
+                if day == 0:
                     initial_bikes[index].append(
                         sum(G.nodes[i]["bikes"] for i in range(num_stations))
                     )
@@ -211,13 +205,12 @@ def main():
 
             gini_values_tot[index].append(gini)
             costs_tot[index].append(total_cost)
-            if args.save_detailed:
-                costs_rebalancing[index].append(np.mean(daily_global_costs))
-                costs_failures[index].append(failure_rate_global)
-                costs_bikes[index].append(n_bikes)
-                failure_rates_per_cat[index].append(
-                    [cat_failure_rates[cat] for cat in active_cats]
-                )
+            costs_rebalancing[index].append(np.mean(daily_global_costs))
+            costs_failures[index].append(failure_rate_global)
+            costs_bikes[index].append(n_bikes)
+            failure_rates_per_cat[index].append(
+                [cat_failure_rates[cat] for cat in active_cats]
+            )
 
             print(f"Gini={gini:.3f}, Cost={total_cost:.2f}")
 
@@ -231,31 +224,30 @@ def main():
     )
     np.save(os.path.join(results_dir, f"cost_{num_seeds}seeds.npy"), costs_tot)
 
-    if args.save_detailed:
-        np.save(
-            os.path.join(results_dir, f"cost_reb_{num_seeds}seeds.npy"),
-            costs_rebalancing,
-        )
-        np.save(
-            os.path.join(results_dir, f"cost_fail_{num_seeds}seeds.npy"),
-            costs_failures,
-        )
-        np.save(
-            os.path.join(results_dir, f"cost_bikes_{num_seeds}seeds.npy"),
-            costs_bikes,
-        )
-        np.save(
-            os.path.join(results_dir, f"initial_bikes_{num_seeds}seeds.npy"),
-            initial_bikes,
-        )
-        # Shape: (num_betas, num_seeds, num_cats)
-        np.save(
-            os.path.join(
-                results_dir,
-                f"failure_rates_per_cat_{num_seeds}seeds.npy",
-            ),
-            failure_rates_per_cat,
-        )
+    np.save(
+        os.path.join(results_dir, f"cost_reb_{num_seeds}seeds.npy"),
+        costs_rebalancing,
+    )
+    np.save(
+        os.path.join(results_dir, f"cost_fail_{num_seeds}seeds.npy"),
+        costs_failures,
+    )
+    np.save(
+        os.path.join(results_dir, f"cost_bikes_{num_seeds}seeds.npy"),
+        costs_bikes,
+    )
+    np.save(
+        os.path.join(results_dir, f"initial_bikes_{num_seeds}seeds.npy"),
+        initial_bikes,
+    )
+    # Shape: (num_betas, num_seeds, num_cats)
+    np.save(
+        os.path.join(
+            results_dir,
+            f"failure_rates_per_cat_{num_seeds}seeds.npy",
+        ),
+        failure_rates_per_cat,
+    )
 
 
 if __name__ == "__main__":

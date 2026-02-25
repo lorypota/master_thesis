@@ -1,3 +1,11 @@
+"""
+CMDP training script.
+
+Usage:
+    uv run cmdp/training.py --r-max 0.075 --categories 5 --seed 100
+    uv run cmdp/training.py --r-max 0.075 --categories 5 --seed 100 --failure-cost-coef 0.0
+"""
+
 import argparse
 import json
 import os

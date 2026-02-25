@@ -1,3 +1,12 @@
+"""
+Launch CMDP training sweep across all configured r_max values.
+
+Runs both base-failure settings (failure_cost_coef `1.0` and `0.0`).
+
+Usage:
+    uv run cmdp/run_training.py
+"""
+
 import os
 import subprocess
 import sys

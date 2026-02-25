@@ -1,3 +1,11 @@
+"""
+Beta learning curve plots from per-seed training outputs.
+
+Usage:
+    uv run beta/plots/learning_curves.py --categories 5
+    uv run beta/plots/learning_curves.py --categories 5 --save
+"""
+
 import argparse
 import os
 

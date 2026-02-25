@@ -1,3 +1,11 @@
+"""
+Beta Pareto-style cost vs Gini plot from evaluation outputs.
+
+Usage:
+    uv run beta/plots/paretoplots.py --categories 5
+    uv run beta/plots/paretoplots.py --categories 5 --save
+"""
+
 import argparse
 import os
 

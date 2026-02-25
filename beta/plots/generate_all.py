@@ -1,4 +1,9 @@
-"""Generate all beta plots for a given category scenario."""
+"""
+Generate all beta plots for a given category scenario.
+
+Usage:
+    uv run beta/plots/generate_all.py --categories 5
+"""
 
 import argparse
 import subprocess

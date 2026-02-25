@@ -1,3 +1,10 @@
+"""
+Launch beta training sweep across all configured beta values.
+
+Usage:
+    uv run beta/run_training.py
+"""
+
 import os
 import subprocess
 import sys

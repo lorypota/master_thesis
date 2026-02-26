@@ -25,7 +25,6 @@ from common.config import (
     GAMMA,
     NUM_TRAIN_DAYS,
     TIME_SLOTS,
-    TRAIN_UNTIL,
     get_scenario,
 )
 from common.demand import generate_global_demand
@@ -53,9 +52,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--num-repeats",
-    default=50,
+    default=100,
     type=int,
-    help="Number of training repeats (default: 50)",
+    help="Number of training repeats (default: 100)",
 )
 parser.add_argument(
     "--run-group", default=None, type=str, help="Wandb group ID for grouping runs"
@@ -168,6 +167,9 @@ all_days_demand_vectors, transformed_demand_vectors = generate_global_demand(
 )
 
 num_stations = np.sum(node_list)
+# CMDP training is non-stationary because dual variables keep changing.
+# Keep all active category agents trainable for the full CMDP run.
+cmdp_train_until = {cat: args.num_repeats for cat in active_cats}
 daily_returns = []
 daily_base_returns = []
 daily_failures = []
@@ -252,7 +254,7 @@ for repeat in range(args.num_repeats):
             if not (day == 0 and repeat == 0):
                 for i in range(num_stations):
                     cat = G.nodes[i]["station"]
-                    if repeat < TRAIN_UNTIL[cat]:
+                    if repeat < cmdp_train_until[cat]:
                         agents[cat].update_q_table(
                             state[i], actions[i], reward[i], next_state[i]
                         )
@@ -274,7 +276,7 @@ for repeat in range(args.num_repeats):
 
             for cat in list(failure_accumulator.keys()):
                 # Only update if this category is still training
-                if repeat < TRAIN_UNTIL[cat]:
+                if repeat < cmdp_train_until[cat]:
                     for p in (0, 1):
                         f_hat = failure_accumulator[cat][p] / n_dual
                         f_bar = failure_thresholds[cat][p]
@@ -450,7 +452,7 @@ with open(os.path.join(results_dir, f"meta_{r_token}_{bf_token}.json"), "w") as 
                 str(cat): [float(v) for v in vals]
                 for cat, vals in failure_thresholds.items()
             },
-            "train_until": {str(cat): v for cat, v in TRAIN_UNTIL.items()},
+            "cmdp_train_until": {str(cat): v for cat, v in cmdp_train_until.items()},
         },
         file,
         indent=2,

@@ -9,7 +9,7 @@ class CMDPEnv:
         lambdas,
         gamma,
         station_params,
-        failure_cost_coef=1.0,
+        failure_cost_coef=0.0,
     ):
         """
         Args:

@@ -32,6 +32,9 @@ cost_fail_raw = np.load(os.path.join(RESULTS_DIR, f"cost_fail_10seeds_{bf_token}
 cost_bikes_raw = np.load(
     os.path.join(RESULTS_DIR, f"cost_bikes_10seeds_{bf_token}.npy")
 )
+max_fail_period_raw = np.load(
+    os.path.join(RESULTS_DIR, f"max_failure_rate_per_period_10seeds_{bf_token}.npy")
+)
 if len(gini_raw) != len(R_MAX_VALUES):
     raise ValueError(
         f"Expected {len(R_MAX_VALUES)} r_max points, found {len(gini_raw)} in eval arrays"
@@ -41,6 +44,8 @@ gini = gini_raw.transpose()
 cost_reb = cost_reb_raw.transpose()
 cost_fail = cost_fail_raw.transpose()
 cost_bikes = cost_bikes_raw.transpose()
+max_fail_morning = max_fail_period_raw[:, :, 0].transpose()
+max_fail_evening = max_fail_period_raw[:, :, 1].transpose()
 
 
 def _fmt(v):
@@ -98,6 +103,88 @@ plt.tight_layout()
 if args.save:
     plt.savefig(
         os.path.join(PLOT_DIR, f"boxplot_gini_{args.categories}_cat_{bf_token}.png"),
+        format="png",
+    )
+plt.show()
+
+# MAX CATEGORY FAILURE RATE (MORNING)
+
+sns.set(style="whitegrid")
+fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
+box_color = sns.color_palette("viridis", 11)[4]
+box = ax.boxplot(
+    max_fail_morning, patch_artist=True, notch=False, vert=True, widths=0.6
+)
+for patch in box["boxes"]:
+    patch.set_facecolor(box_color)
+    patch.set_edgecolor("black")
+    patch.set_alpha(0.8)
+    patch.set_linewidth(1.5)
+for whisker in box["whiskers"]:
+    whisker.set(color="black", linewidth=1.5, linestyle="--")
+for cap in box["caps"]:
+    cap.set(color="black", linewidth=1.5)
+for median in box["medians"]:
+    median.set(color="gold", linewidth=1.5)
+for flier in box["fliers"]:
+    flier.set(marker="o", color="red", alpha=0.75)
+ax.set_xlabel(r"$r_{max}$", fontsize=36)
+ax.set_ylabel("Max cat. failure [%] (morning)", fontsize=22)
+ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
+ax.set_xticks(range(1, num_r_max + 1))
+ax.set_xticklabels(r_max_labels, fontsize=34)
+ax.invert_xaxis()
+ax.tick_params(labelsize=34)
+ax.yaxis.set_major_locator(AutoLocator())
+ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
+plt.tight_layout()
+if args.save:
+    plt.savefig(
+        os.path.join(
+            PLOT_DIR,
+            f"boxplot_max_failure_rate_morning_{args.categories}_cat_{bf_token}.png",
+        ),
+        format="png",
+    )
+plt.show()
+
+# MAX CATEGORY FAILURE RATE (EVENING)
+
+sns.set(style="whitegrid")
+fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
+box_color = sns.color_palette("viridis", 11)[5]
+box = ax.boxplot(
+    max_fail_evening, patch_artist=True, notch=False, vert=True, widths=0.6
+)
+for patch in box["boxes"]:
+    patch.set_facecolor(box_color)
+    patch.set_edgecolor("black")
+    patch.set_alpha(0.8)
+    patch.set_linewidth(1.5)
+for whisker in box["whiskers"]:
+    whisker.set(color="black", linewidth=1.5, linestyle="--")
+for cap in box["caps"]:
+    cap.set(color="black", linewidth=1.5)
+for median in box["medians"]:
+    median.set(color="gold", linewidth=1.5)
+for flier in box["fliers"]:
+    flier.set(marker="o", color="red", alpha=0.75)
+ax.set_xlabel(r"$r_{max}$", fontsize=36)
+ax.set_ylabel("Max cat. failure [%] (evening)", fontsize=22)
+ax.grid(True, which="major", linestyle=":", linewidth=1, color="grey", alpha=0.7)
+ax.set_xticks(range(1, num_r_max + 1))
+ax.set_xticklabels(r_max_labels, fontsize=34)
+ax.invert_xaxis()
+ax.tick_params(labelsize=34)
+ax.yaxis.set_major_locator(AutoLocator())
+ax.yaxis.set_major_formatter(FuncFormatter(tick_fmt))
+plt.tight_layout()
+if args.save:
+    plt.savefig(
+        os.path.join(
+            PLOT_DIR,
+            f"boxplot_max_failure_rate_evening_{args.categories}_cat_{bf_token}.png",
+        ),
         format="png",
     )
 plt.show()

@@ -102,7 +102,7 @@ def main():
     costs_bikes = [[] for _ in range(num_r_max)]
     initial_bikes = [[] for _ in range(num_r_max)]
     constraint_satisfaction = [[] for _ in range(num_r_max)]
-    # Per-category per-period failure rates: shape (num_r_max, num_seeds, num_active_cats, 2)
+    max_failure_rates_per_period = np.zeros((num_r_max, num_seeds, 2))
     failure_rates_per_cat_period = np.zeros((num_r_max, num_seeds, num_active_cats, 2))
 
     for r_idx, r_max in enumerate(r_max_values):
@@ -118,8 +118,12 @@ def main():
             np.random.seed(seed)
             random.seed(seed)
 
-            seed_results_dir = os.path.join(SCRIPT_DIR, "results", cat_dirname, f"seed{seed}")
-            seed_qtables_dir = os.path.join(SCRIPT_DIR, "q_tables", cat_dirname, f"seed{seed}")
+            seed_results_dir = os.path.join(
+                SCRIPT_DIR, "results", cat_dirname, f"seed{seed}"
+            )
+            seed_qtables_dir = os.path.join(
+                SCRIPT_DIR, "q_tables", cat_dirname, f"seed{seed}"
+            )
             r_token = f"r{fmt_token(r_max)}"
             n_bikes = np.load(
                 os.path.join(seed_results_dir, f"bikes_{r_token}_{bf_token}.npy")
@@ -260,10 +264,7 @@ def main():
                 np.mean(daily_global_costs) + n_bikes / 100 + failure_rate_global / 10
             )
 
-            # Constraint satisfaction check (only for constrained categories).
-            # A 5% relative tolerance is applied: policies at the feasibility
-            # boundary may produce marginal evaluation overages due to stochastic
-            # demand noise rather than genuine constraint violation.
+            # A 5% relative tolerance on constraint satisfaction.
             SATISFACTION_TOL = 0.05
             satisfied = True
             for cat in failure_thresholds:
@@ -282,12 +283,21 @@ def main():
 
             # Store per-category per-period failure rates
             seed_idx = seeds.index(seed)
+            max_rate_by_period = [0.0, 0.0]
             for cat_idx_local, cat in enumerate(active_cats):
                 for p in (0, 1):
                     avg_fail = np.mean(period_cat_failures[cat][p])
                     failure_rates_per_cat_period[r_idx, seed_idx, cat_idx_local, p] = (
                         avg_fail
                     )
+                    lambda_d = demand_params[cat_idx_local][p][1]
+                    rate_pct = (
+                        (avg_fail / (12 * lambda_d) * 100) if lambda_d > 0 else 0.0
+                    )
+                    if rate_pct > max_rate_by_period[p]:
+                        max_rate_by_period[p] = rate_pct
+            max_failure_rates_per_period[r_idx, seed_idx, 0] = max_rate_by_period[0]
+            max_failure_rates_per_period[r_idx, seed_idx, 1] = max_rate_by_period[1]
 
             constraint_str = "SAT" if satisfied else "VIOL"
             print(
@@ -304,10 +314,19 @@ def main():
         os.path.join(results_dir, f"gini_{num_seeds}seeds_{bf_token}.npy"),
         gini_values_tot,
     )
-    np.save(os.path.join(results_dir, f"cost_{num_seeds}seeds_{bf_token}.npy"), costs_tot)
+    np.save(
+        os.path.join(results_dir, f"cost_{num_seeds}seeds_{bf_token}.npy"), costs_tot
+    )
     np.save(
         os.path.join(results_dir, f"constraint_sat_{num_seeds}seeds_{bf_token}.npy"),
         constraint_satisfaction,
+    )
+    np.save(
+        os.path.join(
+            results_dir,
+            f"max_failure_rate_per_period_{num_seeds}seeds_{bf_token}.npy",
+        ),
+        max_failure_rates_per_period,
     )
 
     np.save(
